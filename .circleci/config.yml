@@ -1,0 +1,75 @@
+version: 2.0
+jobs:
+  build:
+    docker:
+      - image: circleci/golang:1.12-node
+    working_directory: /go/src/github.com/Brightscout/mattermost-plugin-boilerplate
+    steps:
+      - checkout
+      - restore_cache:
+          name: Restore Golang dependencies cache
+          key: dependency-cache-{{ checksum "./server/glide.lock" }}
+      - restore_cache:
+          name: Restore NPM dependencies cache
+          key: dependency-cache-{{ checksum "./webapp/package-lock.json" }}
+      - type: shell
+        name: 'Build artifacts'
+        command: make dist
+        environment:
+            TERM: dumb
+      - save_cache:
+          name: Save Golang dependencies cache
+          key: dependency-cache-{{ checksum "./server/glide.lock" }}
+          paths:
+              - ./server/vendor
+      - save_cache:
+          name: Save NPM dependencies cache
+          key: dependency-cache-{{ checksum "./webapp/package-lock.json" }}
+          paths:
+              - ./webapp/node_modules
+      - store_artifacts:
+          path: ./dist
+          destination: build
+      - persist_to_workspace:
+          root: .
+          paths:
+            - dist
+  release:
+    docker:
+      - image: cibuilds/github:0.12
+    working_directory: /go/src/github.com/Brightscout/mattermost-plugin-boilerplate
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: "Publish Release on GitHub"
+          command: |
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${CIRCLE_TAG} dist/
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build:
+          filters:
+            branches:
+              only: /.*/
+            tags:
+              ignore: /.*/
+  build-and-release:
+    jobs:
+      - build:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /.*/
+      - release:
+          requires:
+            - build
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /.*/
