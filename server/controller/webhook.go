@@ -230,7 +230,7 @@ func generateSuccessPost(response APIResponse) *model.Post {
 		Props: model.StringInterface{
 			"from_webhook":      "true",
 			"override_icon_url": "https://circleci.zendesk.com/system/brands/0011/9868/circleci-1_thumb.png",
-			"attachments":       []*model.SlackAttachment{attachment},
+			"attachments":      []*model.SlackAttachment{attachment},
 		},
 	}
 
