@@ -5,6 +5,9 @@ GOPATH ?= $(GOPATH:)
 
 MANIFEST_FILE ?= plugin.json
 
+# You can include assets this directory into the bundle. This can be e.g. used to include profile pictures.
+ASSETS_DIR ?= assets
+
 PLUGINNAME=$(shell echo `grep '"'"id"'"\s*:\s*"' $(MANIFEST_FILE) | head -1 | cut -d'"' -f4`)
 PLUGINVERSION=v$(shell echo `grep '"'"version"'"\s*:\s*"' $(MANIFEST_FILE) | head -1 | cut -d'"' -f4`)
 PACKAGENAME=mattermost-plugin-$(PLUGINNAME)-$(PLUGINVERSION)
@@ -59,15 +62,11 @@ check-go: govet golint gofmt
 
 govet:
 ifneq ($(HAS_SERVER),)
-	@go tool vet 2>/dev/null ; if [ $$? -eq 3 ]; then \
-		echo "--> installing govet"; \
-		go get golang.org/x/tools/cmd/vet; \
-	fi
 	@echo ${BOLD}Running GOVET${RESET}
-	@$(GO) get golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
+	# @$(GO) get golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
 	@$(eval PKGS := $(shell go list ./server/... | grep -v /vendor/))
 	@$(GO) vet $(PKGS)
-	@$(GO) vet -vettool=$(GOPATH)/bin/shadow $(PKGS)
+	# @$(GO) vet -vettool=$(GOPATH)/bin/shadow $(PKGS)
 	@echo ${GREEN}"govet success\n"${RESET}
 endif
 
@@ -170,8 +169,11 @@ ifneq ($(HAS_SERVER),)
 	cd server && go get github.com/mitchellh/gox
 	$(shell go env GOPATH)/bin/gox -osarch='darwin/amd64 linux/amd64 windows/amd64' -output 'dist/intermediate/plugin_{{.OS}}_{{.Arch}}' ./server
 	mkdir -p dist/$(PLUGINNAME)/server
-
 endif
+
+#ifneq ($(wildcard $(ASSETS_DIR)/.),)
+#	cp -r $(ASSETS_DIR) dist/$(PLUGINNAME)/
+#endif
 
 	# Compress plugin
 ifneq ($(HAS_SERVER),)

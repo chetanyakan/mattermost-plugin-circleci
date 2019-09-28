@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -8,11 +9,18 @@ import (
 
 	"github.com/mattermost/mattermost-server/model"
 	"github.com/mattermost/mattermost-server/plugin"
+	"github.com/pkg/errors"
 
-	"github.com/Brightscout/mattermost-plugin-boilerplate/server/command"
-	"github.com/Brightscout/mattermost-plugin-boilerplate/server/config"
-	"github.com/Brightscout/mattermost-plugin-boilerplate/server/controller"
-	"github.com/Brightscout/mattermost-plugin-boilerplate/server/util"
+	"github.com/chetanyakan/mattermost-plugin-circleci/server/command"
+	"github.com/chetanyakan/mattermost-plugin-circleci/server/config"
+	"github.com/chetanyakan/mattermost-plugin-circleci/server/controller"
+	"github.com/chetanyakan/mattermost-plugin-circleci/server/util"
+)
+
+const (
+	botUserName    = "circleci"
+	botDisplayName = "CircleCI"
+	botDescription = "Created by the CircleCI Plugin."
 )
 
 type Plugin struct {
@@ -39,6 +47,34 @@ func (p *Plugin) OnActivate() error {
 	}
 
 	return nil
+}
+
+func (p *Plugin) initBotUser() (string, error) {
+	botUserID, err := p.Helpers.EnsureBot(&model.Bot{
+		Username:    botUserName,
+		DisplayName: botDisplayName,
+		Description: botDescription,
+	})
+	if err != nil {
+		return "", errors.Wrap(err, "failed to ensure bot")
+	}
+
+	bundlePath, err := p.API.GetBundlePath()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get bundle path")
+	}
+
+	fmt.Println("BundlePath: " + bundlePath)
+	// profileImage, err := ioutil.ReadFile(filepath.Join(bundlePath, "assets", "circleci.png"))
+	// if err != nil {
+	// 	return "", errors.Wrap(err, "failed to read profile image")
+	// }
+	//
+	// if appErr := p.API.SetProfileImage(botUserID, profileImage); appErr != nil {
+	// 	return "", errors.Wrap(appErr, "failed to set profile image")
+	// }
+
+	return botUserID, nil
 }
 
 func (p *Plugin) setupStaticFileServer() error {
@@ -69,6 +105,13 @@ func (p *Plugin) OnConfigurationChange() error {
 			return err
 		}
 
+		botUserID, err := p.initBotUser()
+		if err != nil {
+			config.Mattermost.LogError(err.Error())
+			return err
+		}
+
+		configuration.BotUserID = botUserID
 		config.SetConfig(&configuration)
 	}
 	return nil
@@ -122,21 +165,27 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 	conf := config.GetConfig()
 
 	if err := conf.IsValid(); err != nil {
-		p.API.LogError("This plugin is not configured: " + err.Error())
+		config.Mattermost.LogError("This plugin is not configured: " + err.Error())
 		http.Error(w, "This plugin is not configured.", http.StatusNotImplemented)
 		return
 	}
 
-	path := r.URL.Path
-	endpoint := controller.Endpoints[path]
-
+	endpoint := controller.GetEndpoint(r)
 	if endpoint == nil {
 		p.handler.ServeHTTP(w, r)
-	} else if !endpoint.RequiresAuth || controller.Authenticated(w, r) {
-		endpoint.Execute(w, r)
+		return
+	}
+
+	if endpoint.RequiresAuth && !controller.Authenticated(w, r) {
+		config.Mattermost.LogError(fmt.Sprintf("Endpoint: %s '%s' requires Authentication.", endpoint.Method, endpoint.Path))
+		http.Error(w, "This endpoint requires authentication.", http.StatusForbidden)
+		return
+	}
+
+	if err := endpoint.Execute(w, r); err != nil {
+		config.Mattermost.LogError(fmt.Sprintf("Processing: %s '%s'.", r.Method, r.URL.String()), "Error", err.Error())
 	}
 }
-
 func main() {
 	plugin.ClientMain(&Plugin{})
 }

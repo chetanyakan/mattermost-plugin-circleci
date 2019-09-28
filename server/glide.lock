@@ -1,8 +1,12 @@
-hash: 03d2a3654e04314d460b147166068e80661604fbc19205e181e3d1b4eb4128a2
-updated: 2019-02-11T13:14:41.548831384+05:30
+hash: 7280ca84f478f46e0c55a63a6550c26c89c062e826d6bbf4796dd9b9ccbb9970
+updated: 2019-09-28T21:43:52.6071178+05:30
 imports:
 - name: github.com/blang/semver
   version: 3c1074078d32d767e08ab2c8564867292da86926
+- name: github.com/davecgh/go-spew
+  version: d8f796af33cc11cb798c1aaeb27a4ebc5099927d
+  subpackages:
+  - spew
 - name: github.com/dyatlov/go-opengraph
   version: 816b6608b3c8c1e871bc9cf777f390e2532081fe
   subpackages:
@@ -23,45 +27,30 @@ imports:
   version: ff2cf002a8dd750586d91dddd4470c341f981fe1
 - name: github.com/hashicorp/go-plugin
   version: a4620f9913d19f03a6bf19b2f304daaaf83ea130
-- name: github.com/hashicorp/hcl
-  version: ef8a98b0bbce4a65b5aa4c368430a80ddc533168
-  subpackages:
-  - hcl/ast
-  - hcl/parser
-  - hcl/printer
-  - hcl/scanner
-  - hcl/strconv
-  - hcl/token
-  - json/parser
-  - json/scanner
-  - json/token
 - name: github.com/hashicorp/yamux
   version: 3520598351bb3500a49ae9563f5539666ae0a27c
-- name: github.com/magiconair/properties
-  version: c2353362d570a7bfa228149c62842019201cfb71
-- name: github.com/mattermost/mattermost-server
-  version: ad3ddac9b935fb842ca4301f69266ffb87ec8c86
-  subpackages:
-  - einterfaces
-  - mlog
-  - model
-  - plugin
-  - utils
-  - utils/jsonutils
-  - utils/markdown
-- name: github.com/mattermost/viper
-  version: b5e8006cbee93ec955a89ab31e0e3ce3204f3736
-- name: github.com/mitchellh/go-testing-interface
-  version: a61a99592b77c9ba629d254a693acffaeb4b7e28
-- name: github.com/mitchellh/mapstructure
-  version: f15292f7a699fcc1a38a80977f80a046874ba8ac
-- name: github.com/nicksnyder/go-i18n
-  version: 0dc1626d56435e9d605a29875701721c54bc9bbd
+- name: github.com/mattermost/go-i18n
+  version: 9a9b2eb57c9f39e7142fe48a35f047716c444ed1
   subpackages:
   - i18n
   - i18n/bundle
   - i18n/language
   - i18n/translation
+- name: github.com/mattermost/ldap
+  version: fee0a369f21be68ea3d647c0da8272a352fa1528
+- name: github.com/mattermost/mattermost-server
+  version: f4f7fd0829d74fcd5e290fd1ba76845af18e553e
+  subpackages:
+  - mlog
+  - model
+  - plugin
+  - services/timezones
+  - utils
+  - utils/fileutils
+  - utils/jsonutils
+  - utils/markdown
+- name: github.com/mitchellh/go-testing-interface
+  version: a61a99592b77c9ba629d254a693acffaeb4b7e28
 - name: github.com/oklog/run
   version: 6934b124db28979da51d3470dadfa34d73d72652
 - name: github.com/pborman/uuid
@@ -70,20 +59,19 @@ imports:
   version: 4e9e0ee19b60b13eb79915933f44d8ed5f268bdd
 - name: github.com/pkg/errors
   version: f15c970de5b76fac0b59abb32d62c17cc7bed265
-- name: github.com/spf13/afero
-  version: 787d034dfe70e44075ccc060d346146ef53270ad
+- name: github.com/pmezard/go-difflib
+  version: 5d4384ee4fb2527b0a1256a821ebfc92f91efefc
   subpackages:
-  - mem
-- name: github.com/spf13/cast
-  version: 8965335b8c7107321228e3e3702cab9832751bac
-- name: github.com/spf13/jwalterweatherman
-  version: 14d3d4c518341bea657dd8a226f5121c0ff8c9f2
-- name: github.com/spf13/pflag
-  version: 947b89bd1b7dabfed991ac30e1a56f5193f0c88b
+  - difflib
+- name: github.com/stretchr/testify
+  version: 85f2b59c4459e5bf57488796be8c3667cb8246d6
+  subpackages:
+  - assert
+  - require
 - name: go.uber.org/atomic
-  version: 1ea20fb1cbb1cc08cbd0d913a96dead89aa18289
+  version: df976f2515e274675050de7b3f42545de80594fd
 - name: go.uber.org/multierr
-  version: 3c4937480c32f4c13a875a1829af76c98ca3d40a
+  version: 71e610a0e48dbda460d9c18adca8b5f2de04a7c1
 - name: go.uber.org/zap
   version: 2dc8d10634f473f4dc678e48391a9dc8cf6ae6f9
   subpackages:
@@ -116,6 +104,10 @@ imports:
 - name: golang.org/x/text
   version: 6e3c4e7365ddcc329f090f96e4348398f6310088
   subpackages:
+  - internal/language
+  - internal/language/compact
+  - internal/tag
+  - language
   - secure/bidirule
   - transform
   - unicode/bidi
@@ -154,8 +146,10 @@ imports:
   - stats
   - status
   - tap
+- name: gopkg.in/asn1-ber.v1
+  version: f715ec2f112d1e4195b827ad68cf44017a3ef2b1
 - name: gopkg.in/natefinch/lumberjack.v2
   version: a96e63847dc3c67d17befa69c303767e2f84e54f
 - name: gopkg.in/yaml.v2
-  version: 287cf08546ab5e7e37d55a84f7ed3fd1db036de5
+  version: 51d6538a90f86fe93ac480b35f37b2be17fef232
 testImports: []

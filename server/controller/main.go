@@ -3,19 +3,30 @@ package controller
 import (
 	"net/http"
 
-	"github.com/Brightscout/mattermost-plugin-boilerplate/server/config"
+	"github.com/chetanyakan/mattermost-plugin-circleci/server/config"
+	"github.com/chetanyakan/mattermost-plugin-circleci/server/util"
 )
 
 type Endpoint struct {
 	Path         string
-	Execute      func(w http.ResponseWriter, r *http.Request)
+	Method       string
+	Execute      func(w http.ResponseWriter, r *http.Request) error
 	RequiresAuth bool
 }
 
+// Endpoints is a map of endpoint key to endpoint object
+// Usage: getEndpointKey(GetMetadata): GetMetadata
 var Endpoints = map[string]*Endpoint{
-	// add endpoints here.
-	// Map endpoint URL to Endpoint object. Example -
-	// GetMetadata.Path: GetMetadata
+	getEndpointKey(submitSurveyResponse): submitSurveyResponse,
+}
+
+func getEndpointKey(endpoint *Endpoint) string {
+	return util.GetKeyHash(endpoint.Path + "-" + endpoint.Method)
+}
+
+// GetEndpoint returns an endpoint for an http request
+func GetEndpoint(r *http.Request) *Endpoint {
+	return Endpoints[util.GetKeyHash(r.URL.Path+"-"+r.Method)]
 }
 
 // Authenticated verifies if provided request is performed by a logged-in Mattermost user.

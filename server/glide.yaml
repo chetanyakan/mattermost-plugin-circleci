@@ -1,6 +1,6 @@
-package: github.com/Brightscout/mattermost-plugin-boilerplate/server
+package: github.com/chetanyakan/mattermost-plugin-circleci/server
 import:
 - package: github.com/mattermost/mattermost-server
-  version: ~5.7.1
+  version: 5.15.0
   subpackages:
   - plugin

@@ -1,5 +1,5 @@
 package config
 
 const (
-	PluginName = "boilerplate"
+	PluginName = "circleci"
 )

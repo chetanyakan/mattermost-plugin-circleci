@@ -2,7 +2,6 @@ package config
 
 import (
 	"github.com/mattermost/mattermost-server/plugin"
-	"github.com/pkg/errors"
 	"go.uber.org/atomic"
 )
 
@@ -23,7 +22,7 @@ var (
 )
 
 type Configuration struct {
-	SiteURL string `json:"SiteURL"`
+	BotUserID string `json:"BotUserID,omitempty"`
 }
 
 func GetConfig() *Configuration {
@@ -43,11 +42,6 @@ func (c *Configuration) ProcessConfiguration() error {
 func (c *Configuration) IsValid() error {
 	// Add config validations here.
 	// Check for required fields, formats, etc.
-
-	if c.SiteURL == "" {
-		Mattermost.LogError("site URL cannot be empty")
-		return errors.New("site URL cannot be empty")
-	}
 
 	return nil
 }
