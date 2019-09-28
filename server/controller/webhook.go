@@ -132,7 +132,7 @@ func generateSuccessPost(response APIResponse) *model.Post {
 	}
 
 	attachment := &model.SlackAttachment{
-		Color:    "#41aa58",
+		Color:   "#41aa58",
 		Title:    fmt.Sprintf("Build %s passed.", response.BuildNum),
 		Text:     response.RepoName,
 		Fields:   slackAttachmentFields,
