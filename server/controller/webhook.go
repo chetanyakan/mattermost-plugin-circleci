@@ -30,12 +30,18 @@ var submitSurveyResponse = &Endpoint{
 	RequiresAuth: false,
 }
 
+type APIResponse struct {
+	ChannelID string `json:"channel_id"`
+	Status    string `json:"status"`
+	BuildNum  string `json:"build_num"`
+	RepoName  string `json:"repo_name"`
+	Tag       string `json:"tag"`
+	Commit    string `json:"commit"`
+	BuildURL  string `json:"build_url"`
+}
+
 func executeSubmitSurveyResponse(w http.ResponseWriter, r *http.Request) error {
-	var response struct {
-		ChannelID string `json:"channel_id"`
-		Status    string `json:"status"`
-		Build     string `json:"build"`
-	}
+	var response APIResponse
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&response); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -43,46 +49,14 @@ func executeSubmitSurveyResponse(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	fmt.Println(response)
-	conf := config.GetConfig()
 
-	// slackAttachmentFields := []*model.SlackAttachmentField{
-	// 	{
-	// 		Title: "",
-	// 		Value: "",
-	// 		Short: false,
-	// 	},
-	// 	{
-	// 		Title: "",
-	// 		Value: "",
-	// 		Short: false,
-	// 	},
-	// 	{
-	// 		Title: "",
-	// 		Value: "",
-	// 		Short: true,
-	// 	},
-	// 	{
-	// 		Title: "",
-	// 		Value: "",
-	// 		Short: true,
-	// 	},
-	// }
-
-	attachment := &model.SlackAttachment{
-		Color: colors[response.Status],
-		Text:  texts[response.Status],
-		// Fields:     slackAttachmentFields,
+	var post *model.Post
+	if response.Status == "failure" {
+		post = generateFailurePost(response)
+	} else if response.Status == "success" {
+		post = generateSuccessPost(response)
 	}
 
-	post := &model.Post{
-		UserId:    conf.BotUserID,
-		ChannelId: response.ChannelID,
-		Props: model.StringInterface{
-			"from_webhook":      "true",
-			"override_icon_url": "https://circleci.zendesk.com/system/brands/0011/9868/circleci-1_thumb.png",
-			"attachments":       []*model.SlackAttachment{attachment},
-		},
-	}
 	post, appErr := config.Mattermost.CreatePost(post)
 	if appErr != nil {
 		config.Mattermost.LogError(appErr.Error())
@@ -94,4 +68,86 @@ func executeSubmitSurveyResponse(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	return nil
+}
+
+func generateFailurePost(response APIResponse) *model.Post {
+	conf := config.GetConfig()
+	slackAttachmentFields := []*model.SlackAttachmentField{
+		{
+			Title: "Link",
+			Value: response.BuildURL,
+			Short: false,
+		},
+		{
+			Title: "Tag",
+			Value: response.Tag,
+			Short: true,
+		},
+		{
+			Title: "Commit",
+			Value: response.Commit,
+			Short: true,
+		},
+	}
+
+	attachment := &model.SlackAttachment{
+		Color:    "#d10c20",
+		Title:    fmt.Sprintf("Oops. Build %s failed.", response.BuildNum),
+		Text:     response.RepoName,
+		Fields:   slackAttachmentFields,
+		ThumbURL: "https://png.pngtree.com/svg/20170406/icon_failed__1325447.png",
+	}
+
+	post := &model.Post{
+		UserId:    conf.BotUserID,
+		ChannelId: response.ChannelID,
+		Props: model.StringInterface{
+			"from_webhook":      "true",
+			"override_icon_url": "https://circleci.zendesk.com/system/brands/0011/9868/circleci-1_thumb.png",
+			"attachments":       []*model.SlackAttachment{attachment},
+		},
+	}
+
+	return post
+}
+
+func generateSuccessPost(response APIResponse) *model.Post {
+	conf := config.GetConfig()
+	slackAttachmentFields := []*model.SlackAttachmentField{
+		{
+			Title: "Link",
+			Value: response.BuildURL,
+			Short: false,
+		},
+		{
+			Title: "Tag",
+			Value: response.Tag,
+			Short: true,
+		},
+		{
+			Title: "Commit",
+			Value: response.Commit,
+			Short: true,
+		},
+	}
+
+	attachment := &model.SlackAttachment{
+		Color:    "#d10c20",
+		Title:    fmt.Sprintf("Oops. Build %s passed.", response.BuildNum),
+		Text:     response.RepoName,
+		Fields:   slackAttachmentFields,
+		ThumbURL: "https://png.pngtree.com/svg/20170510/success_404253.png",
+	}
+
+	post := &model.Post{
+		UserId:    conf.BotUserID,
+		ChannelId: response.ChannelID,
+		Props: model.StringInterface{
+			"from_webhook":      "true",
+			"override_icon_url": "https://circleci.zendesk.com/system/brands/0011/9868/circleci-1_thumb.png",
+			"attachments":       []*model.SlackAttachment{attachment},
+		},
+	}
+
+	return post
 }
