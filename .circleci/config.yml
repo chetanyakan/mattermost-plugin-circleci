@@ -40,7 +40,7 @@ jobs:
           command: >
             curl --header "Content-Type: application/json"
             --request POST
-            --data "{\"channel_id\":\"$CHANNEL_ID\",\"status\":\"failure\",\"build_num\":\"$CIRCLE_BUILD_NUM\",\"repo_name\":\"$CIRCLE_PROJECT_REPONAME\",\"tag\":\"$CIRCLE_TAG\",\"commit\":\"$CIRCLE_SHA1\",\"build_url\":\"$CIRCLE_BUILD_URL\"}
+            --data "{\"channel_id\":\"$CHANNEL_ID\",\"status\":\"failure\",\"build_num\":\"$CIRCLE_BUILD_NUM\",\"repo_name\":\"$CIRCLE_PROJECT_REPONAME\",\"tag\":\"$CIRCLE_TAG\",\"commit\":\"$CIRCLE_SHA1\",\"build_url\":\"$CIRCLE_BUILD_URL\"}"
             $WEBHOOK_URL
       - run:
           name: Notification Success
@@ -48,7 +48,7 @@ jobs:
           command: >
             curl --header "Content-Type: application/json"
             --request POST
-            --data "{\"channel_id\":\"$CHANNEL_ID\",\"status\":\"success\",\"build_num\":\"$CIRCLE_BUILD_NUM\",\"repo_name\":\"$CIRCLE_PROJECT_REPONAME\",\"tag\":\"$CIRCLE_TAG\",\"commit\":\"$CIRCLE_SHA1\",\"build_url\":\"$CIRCLE_BUILD_URL\"}
+            --data "{\"channel_id\":\"$CHANNEL_ID\",\"status\":\"success\",\"build_num\":\"$CIRCLE_BUILD_NUM\",\"repo_name\":\"$CIRCLE_PROJECT_REPONAME\",\"tag\":\"$CIRCLE_TAG\",\"commit\":\"$CIRCLE_SHA1\",\"build_url\":\"$CIRCLE_BUILD_URL\"}"
             $WEBHOOK_URL
 
   release:
