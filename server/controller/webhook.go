@@ -12,13 +12,13 @@ import (
 )
 
 var colors = map[string]string{
-	"test": "#AAAAAA",
+	"test":    "#AAAAAA",
 	"success": "#41aa58",
 	"failure": "#d10c20",
 }
 
 var texts = map[string]string{
-	"test": "Hello from CircleCI",
+	"test":    "Hello from CircleCI",
 	"success": "CircleCI build success",
 	"failure": "CircleCI build failure",
 }
@@ -33,8 +33,8 @@ var submitSurveyResponse = &Endpoint{
 func executeSubmitSurveyResponse(w http.ResponseWriter, r *http.Request) error {
 	var response struct {
 		ChannelID string `json:"channel_id"`
-		Status string `json:"status"`
-		Build string `json:"build"`
+		Status    string `json:"status"`
+		Build     string `json:"build"`
 	}
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&response); err != nil {
@@ -69,19 +69,18 @@ func executeSubmitSurveyResponse(w http.ResponseWriter, r *http.Request) error {
 	// }
 
 	attachment := &model.SlackAttachment{
-		Color:      colors[response.Status],
-		Text:       texts[response.Status],
+		Color: colors[response.Status],
+		Text:  texts[response.Status],
 		// Fields:     slackAttachmentFields,
 	}
 
 	post := &model.Post{
 		UserId:    conf.BotUserID,
 		ChannelId: response.ChannelID,
-		Message:   "Circleci Status",
 		Props: model.StringInterface{
 			"from_webhook":      "true",
 			"override_icon_url": "https://circleci.zendesk.com/system/brands/0011/9868/circleci-1_thumb.png",
-			"attachments": []*model.SlackAttachment{attachment},
+			"attachments":       []*model.SlackAttachment{attachment},
 		},
 	}
 	post, appErr := config.Mattermost.CreatePost(post)
