@@ -31,13 +31,20 @@ var submitSurveyResponse = &Endpoint{
 }
 
 type APIResponse struct {
-	ChannelID string `json:"channel_id"`
-	Status    string `json:"status"`
-	BuildNum  string `json:"build_num"`
-	RepoName  string `json:"repo_name"`
-	Tag       string `json:"tag"`
-	Commit    string `json:"commit"`
-	BuildURL  string `json:"build_url"`
+	ChannelID   string `json:"channel_id"`
+	Status      string `json:"status"`
+	BuildNum    string `json:"build_num"`
+	RepoName    string `json:"repo_name"`
+	Tag         string `json:"tag"`
+	Commit      string `json:"commit"`
+	BuildURL    string `json:"build_url"`
+	CompareURL  string `json:"compare_url"`
+	OrgName     string `json:"org_name"`
+	Branch      string `json:"branch"`
+	Username    string `json:"username"`
+	PullRequest string `json:"pull_request"` // TODO: multiple PRs
+	Job         string `json:"job"`
+	WorkflowID  string `json:"workflow_id"`
 }
 
 func executeSubmitSurveyResponse(w http.ResponseWriter, r *http.Request) error {
@@ -79,8 +86,28 @@ func generateFailurePost(response APIResponse) *model.Post {
 			Short: false,
 		},
 		{
+			Title: "Pull Request",
+			Value: response.PullRequest,
+			Short: false,
+		},
+		{
+			Title: "Compare URL",
+			Value: response.CompareURL,
+			Short: false,
+		},
+		{
 			Title: "Tag",
 			Value: response.Tag,
+			Short: true,
+		},
+		{
+			Title: "Branch",
+			Value: response.Branch,
+			Short: true,
+		},
+		{
+			Title: "Triggered By",
+			Value: response.Username,
 			Short: true,
 		},
 		{
@@ -88,12 +115,31 @@ func generateFailurePost(response APIResponse) *model.Post {
 			Value: response.Commit,
 			Short: true,
 		},
+		{
+			Title: "Organisation/User",
+			Value: response.OrgName,
+			Short: true,
+		},
+		{
+			Title: "Repo",
+			Value: response.RepoName,
+			Short: true,
+		},
+		{
+			Title: "Job",
+			Value: response.Job,
+			Short: true,
+		},
+		{
+			Title: "Workflow ID",
+			Value: response.WorkflowID,
+			Short: true,
+		},
 	}
 
 	attachment := &model.SlackAttachment{
 		Color:    "#d10c20",
 		Title:    fmt.Sprintf("Oops. Build %s failed.", response.BuildNum),
-		Text:     response.RepoName,
 		Fields:   slackAttachmentFields,
 		ThumbURL: "https://png.pngtree.com/svg/20170406/icon_failed__1325447.png",
 	}
@@ -120,8 +166,28 @@ func generateSuccessPost(response APIResponse) *model.Post {
 			Short: false,
 		},
 		{
+			Title: "Pull Request",
+			Value: response.PullRequest,
+			Short: false,
+		},
+		{
+			Title: "Compare URL",
+			Value: response.CompareURL,
+			Short: false,
+		},
+		{
 			Title: "Tag",
 			Value: response.Tag,
+			Short: true,
+		},
+		{
+			Title: "Branch",
+			Value: response.Branch,
+			Short: true,
+		},
+		{
+			Title: "Triggered By",
+			Value: response.Username,
 			Short: true,
 		},
 		{
@@ -129,12 +195,31 @@ func generateSuccessPost(response APIResponse) *model.Post {
 			Value: response.Commit,
 			Short: true,
 		},
+		{
+			Title: "Organisation/User",
+			Value: response.OrgName,
+			Short: true,
+		},
+		{
+			Title: "Repo",
+			Value: response.RepoName,
+			Short: true,
+		},
+		{
+			Title: "Job",
+			Value: response.Job,
+			Short: true,
+		},
+		{
+			Title: "Workflow ID",
+			Value: response.WorkflowID,
+			Short: true,
+		},
 	}
 
 	attachment := &model.SlackAttachment{
-		Color:   "#41aa58",
+		Color:    "#41aa58",
 		Title:    fmt.Sprintf("Build %s passed.", response.BuildNum),
-		Text:     response.RepoName,
 		Fields:   slackAttachmentFields,
 		ThumbURL: "https://png.pngtree.com/svg/20170510/success_404253.png",
 	}
