@@ -1,3 +1,4 @@
+// From https://github.com/jszwedko/go-circleci
 package circleci
 
 import (
