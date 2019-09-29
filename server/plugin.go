@@ -118,10 +118,9 @@ func (p *Plugin) OnConfigurationChange() error {
 }
 
 func (p *Plugin) registerCommands() error {
-	for _, c := range command.Commands {
-		if err := config.Mattermost.RegisterCommand(c.Command); err != nil {
-			return err
-		}
+	if err := config.Mattermost.RegisterCommand(command.Master().Command); err != nil {
+		config.Mattermost.LogError("Cound't register command", err, map[string]interface{}{"command": command.Master().Command.Trigger})
+		return err
 	}
 
 	return nil
@@ -130,7 +129,7 @@ func (p *Plugin) registerCommands() error {
 func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
 	split, argErr := util.SplitArgs(args.Command)
 	if argErr != nil {
-		return util.CommandError(argErr.Error())
+		return util.SendEphemeralText(argErr.Error())
 	}
 
 	cmdName := split[0]
@@ -140,18 +139,17 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		params = split[1:]
 	}
 
-	commandConfig := command.Commands[cmdName]
-	if commandConfig == nil {
+	if cmdName != "/"+command.Master().Command.Trigger {
 		return nil, &model.AppError{Message: "Unknown command: [" + cmdName + "] encountered"}
 	}
 
 	context := p.prepareContext(args)
-	if response, err := commandConfig.Validate(params, context); response != nil {
+	if response, err := command.Master().Validate(params, context); response != nil {
 		return response, err
 	}
 
 	config.Mattermost.LogInfo("Executing command: " + cmdName + " with params: [" + strings.Join(params, ", ") + "]")
-	return commandConfig.Execute(params, context)
+	return command.Master().Execute(params, context)
 }
 
 func (p *Plugin) prepareContext(args *model.CommandArgs) command.Context {

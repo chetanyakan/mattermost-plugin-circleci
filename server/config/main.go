@@ -14,6 +14,10 @@ const (
 	URLStaticBase = URLPluginBase + "/static"
 
 	HeaderMattermostUserID = "Mattermost-User-Id"
+
+	BotUserName    = "circleci"
+	BotDisplayName = "CircleCI"
+	BotDescription = "Created by the CircleCI Plugin."
 )
 
 var (
