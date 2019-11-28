@@ -1,7 +1,15 @@
-GO:=go
+GO ?= $(shell command -v go 2> /dev/null)
+NPM ?= $(shell command -v npm 2> /dev/null)
+CURL ?= $(shell command -v curl 2> /dev/null)
 GOARCH:=amd64
 GOOS=$(shell uname -s | tr '[:upper:]' '[:lower:]')
-GOPATH ?= $(GOPATH:)
+GOPATH ?= $(shell go env GOPATH)
+GO_TEST_FLAGS ?= -race
+GO_BUILD_FLAGS ?=
+
+
+export GO111MODULE=on
+
 
 MANIFEST_FILE ?= plugin.json
 
@@ -60,28 +68,41 @@ endif
 
 check-go: govet golint gofmt
 
+gofmt:
+ifneq ($(HAS_SERVER),)
+	@echo ${BOLD}Running GOFMT${RESET}
+	@for package in $$(go list ./server/...); do \
+		files=$$(go list -f '{{range .GoFiles}}{{$$.Dir}}/{{.}} {{end}}' $$package); \
+		if [ "$$files" ]; then \
+			gofmt_output=$$(gofmt -d -s $$files 2>&1); \
+			if [ "$$gofmt_output" ]; then \
+				echo "$$gofmt_output"; \
+				echo ${RED}"gofmt failure\n"${RESET}; \
+				exit 1; \
+			fi; \
+		fi; \
+	done
+	@echo ${GREEN}"gofmt success\n"${RESET}
+endif
+
 govet:
 ifneq ($(HAS_SERVER),)
 	@echo ${BOLD}Running GOVET${RESET}
-	# @$(GO) get golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
-	@$(eval PKGS := $(shell go list ./server/... | grep -v /vendor/))
-	@$(GO) vet $(PKGS)
-	# @$(GO) vet -vettool=$(GOPATH)/bin/shadow $(PKGS)
+	@# Workaround because you can't install binaries without adding them to go.mod
+	env GO111MODULE=off $(GO) get golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
+	cd server && $(GO) vet ./...
+	cd server && $(GO) vet -vettool=$(GOPATH)/bin/shadow ./...
 	@echo ${GREEN}"govet success\n"${RESET}
 endif
 
 golint:
 ifneq ($(HAS_SERVER),)
-	@command -v golint >/dev/null ; if [ $$? -ne 0 ]; then \
-		echo "--> installing golint"; \
-		go get -u golang.org/x/lint/golint; \
-	fi
 	@echo ${BOLD}Running GOLINT${RESET}
-	@cd server
+	env GO111MODULE=off $(GO) get golang.org/x/lint/golint
 	$(eval PKGS := $(shell go list ./... | grep -v /vendor/))
 	@touch $(TMPFILEGOLINT)
 	-@for pkg in $(PKGS) ; do \
-		echo `golint $$pkg | grep -v "have comment" | grep -v "comment on exported" | grep -v "lint suggestions"` >> $(TMPFILEGOLINT) ; \
+		echo `$(GOPATH)/bin/golint $$pkg | grep -v "have comment" | grep -v "comment on exported" | grep -v "lint suggestions"` >> $(TMPFILEGOLINT) ; \
 	done
 	@grep -Ev "^$$" $(TMPFILEGOLINT) || true
 	@if [ "$$(grep -Ev "^$$" $(TMPFILEGOLINT) | wc -l)" -gt "0" ]; then \
@@ -111,26 +132,9 @@ ifneq ($(HAS_SERVER),)
 	@echo "formatted go files\n"
 endif
 
-gofmt:
-ifneq ($(HAS_SERVER),)
-	@echo ${BOLD}Running GOFMT${RESET}
-	@for package in $$(go list ./server/...); do \
-		files=$$(go list -f '{{range .GoFiles}}{{$$.Dir}}/{{.}} {{end}}' $$package); \
-		if [ "$$files" ]; then \
-			gofmt_output=$$(gofmt -d -s $$files 2>&1); \
-			if [ "$$gofmt_output" ]; then \
-				echo "$$gofmt_output"; \
-				echo ${RED}"gofmt failure\n"${RESET}; \
-				exit 1; \
-			fi; \
-		fi; \
-	done
-	@echo ${GREEN}"gofmt success\n"${RESET}
-endif
-
 test:
 ifneq ($(HAS_SERVER),)
-	go test -v -coverprofile=coverage.txt ./...
+	cd server && $(GO) test -v -coverprofile=coverage.txt ./...
 endif
 
 .npminstall:
@@ -142,9 +146,8 @@ endif
 
 vendor:
 ifneq ($(HAS_SERVER),)
-	@echo ${BOLD}"Getting dependencies using glide\n"${RESET}
-	cd server && go get github.com/Masterminds/glide
-	cd server && $(shell go env GOPATH)/bin/glide install
+	@echo ${BOLD}"Getting dependencies using go modules\n"${RESET}
+	cd server && $(GO) mod vendor
 	@echo "\n"
 endif
 
@@ -165,15 +168,15 @@ ifneq ($(HAS_WEBAPP),)
 endif
 
 ifneq ($(HAS_SERVER),)
-	# Build files from server and copy server executables
-	cd server && go get github.com/mitchellh/gox
-	$(shell go env GOPATH)/bin/gox -osarch='darwin/amd64 linux/amd64 windows/amd64' -output 'dist/intermediate/plugin_{{.OS}}_{{.Arch}}' ./server
+	cd server && env GOOS=linux GOARCH=amd64 $(GO) build $(GO_BUILD_FLAGS) -o ../dist/intermediate/plugin_linux_amd64;
+	cd server && env GOOS=darwin GOARCH=amd64 $(GO) build $(GO_BUILD_FLAGS) -o ../dist/intermediate/plugin_darwin_amd64;
+	cd server && env GOOS=windows GOARCH=amd64 $(GO) build $(GO_BUILD_FLAGS) -o ../dist/intermediate/plugin_windows_amd64.exe;
 	mkdir -p dist/$(PLUGINNAME)/server
 endif
 
-#ifneq ($(wildcard $(ASSETS_DIR)/.),)
-#	cp -r $(ASSETS_DIR) dist/$(PLUGINNAME)/
-#endif
+# ifneq ($(wildcard $(ASSETS_DIR)/.),)
+# 	cp -r $(ASSETS_DIR) dist/$(PLUGINNAME)/
+# endif
 
 	# Compress plugin
 ifneq ($(HAS_SERVER),)
@@ -200,6 +203,8 @@ ifneq ($(HAS_SERVER),)
 else ifneq ($(HAS_WEBAPP),)
 	@echo Cross-platform plugin built at:  dist/$(PACKAGENAME)-amd64.tar.gz
 endif
+
+
 
 .distclean:
 	@echo ${BOLD}"Cleaning dist files\n"${RESET}
