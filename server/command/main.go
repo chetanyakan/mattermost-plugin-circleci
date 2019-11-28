@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/mattermost/mattermost-server/model"
+
+	"github.com/chetanyakan/mattermost-plugin-circleci/server/config"
 )
 
 type Context struct {
@@ -22,12 +24,19 @@ func (c *Config) Syntax() string {
 	return fmt.Sprintf("/%s %s", c.Command.Trigger, c.Command.AutoCompleteHint)
 }
 
-var Commands map[string]*Config
+var commands = map[string]*Config{
+	commandConnect().Command.Trigger:    commandConnect(),
+	commandDisconnect().Command.Trigger: commandDisconnect(),
+	commandMe().Command.Trigger:         commandMe(),
+	// commandHelp().Command.Trigger:          commandHelp(),
+}
 
-func init() {
-	Commands = map[string]*Config{
-		// Add command mappings here.
-		// Map trigger to corresponding Config object. Example -
-		// SomeCommand().Trigger: SomeCommand()s
+func postCommandResponse(args *model.CommandArgs, text string) {
+	botUserID := config.GetConfig().BotUserID
+	post := &model.Post{
+		UserId:    botUserID,
+		ChannelId: args.ChannelId,
+		Message:   text,
 	}
+	_ = config.Mattermost.SendEphemeralPost(args.UserId, post)
 }

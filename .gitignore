@@ -65,6 +65,9 @@ jspm_packages/
 # next.js build output
 .next
 
+# IDE generated files
+.idea
+
 # Plugin generated files
 dist
 plugin.exe

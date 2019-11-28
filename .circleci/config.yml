@@ -3,7 +3,7 @@ jobs:
   build:
     docker:
       - image: circleci/golang:1.12-node
-    working_directory: /go/src/github.com/Brightscout/mattermost-plugin-boilerplate
+    working_directory: /go/src/github.com/chetanyakan/mattermost-plugin-circleci
     steps:
       - checkout
       - restore_cache:
@@ -34,10 +34,27 @@ jobs:
           root: .
           paths:
             - dist
+      - run:
+          name: Notification Fail
+          when: on_fail
+          command: >
+            curl --header "Content-Type: application/json"
+            --request POST
+            --data "{\"channel_id\":\"$CHANNEL_ID\",\"status\":\"failure\",\"build_num\":\"$CIRCLE_BUILD_NUM\",\"repo_name\":\"$CIRCLE_PROJECT_REPONAME\",\"tag\":\"$CIRCLE_TAG\",\"commit\":\"$CIRCLE_SHA1\",\"build_url\":\"$CIRCLE_BUILD_URL\",\"org_name\":\"$CIRCLE_PROJECT_USERNAME\",\"branch\":\"$CIRCLE_BRANCH\",\"username\":\"$CIRCLE_USERNAME\",\"pull_request\":\"$CIRCLE_PULL_REQUEST\",\"job\":\"$CIRCLE_JOB\",\"workflow_id\":\"$CIRCLE_WORKFLOW_ID\",\"compare_url\":\"$CIRCLE_COMPARE_URL\"}"
+            $WEBHOOK_URL
+      - run:
+          name: Notification Success
+          when: on_success
+          command: >
+            curl --header "Content-Type: application/json"
+            --request POST
+            --data "{\"channel_id\":\"$CHANNEL_ID\",\"status\":\"success\",\"build_num\":\"$CIRCLE_BUILD_NUM\",\"repo_name\":\"$CIRCLE_PROJECT_REPONAME\",\"tag\":\"$CIRCLE_TAG\",\"commit\":\"$CIRCLE_SHA1\",\"build_url\":\"$CIRCLE_BUILD_URL\",\"org_name\":\"$CIRCLE_PROJECT_USERNAME\",\"branch\":\"$CIRCLE_BRANCH\",\"username\":\"$CIRCLE_USERNAME\",\"pull_request\":\"$CIRCLE_PULL_REQUEST\",\"job\":\"$CIRCLE_JOB\",\"workflow_id\":\"$CIRCLE_WORKFLOW_ID\",\"compare_url\":\"$CIRCLE_COMPARE_URL\"}"
+            $WEBHOOK_URL
+
   release:
     docker:
       - image: cibuilds/github:0.12
-    working_directory: /go/src/github.com/Brightscout/mattermost-plugin-boilerplate
+    working_directory: /go/src/github.com/chetanyakan/mattermost-plugin-circleci
     steps:
       - checkout
       - attach_workspace:
