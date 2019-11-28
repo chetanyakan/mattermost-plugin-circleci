@@ -1,8 +1,10 @@
-hash: 7280ca84f478f46e0c55a63a6550c26c89c062e826d6bbf4796dd9b9ccbb9970
-updated: 2019-09-28T21:43:52.6071178+05:30
+hash: 822990f488360d762eb2649a36d4c8e7b5884d5e64934c08dec0fcf14e100852
+updated: 2019-11-29T03:13:37.575133+05:30
 imports:
 - name: github.com/blang/semver
   version: 3c1074078d32d767e08ab2c8564867292da86926
+- name: github.com/BurntSushi/toml
+  version: 3012a1dbe2e4bd1391d42b32f0577cb7bbc7f005
 - name: github.com/davecgh/go-spew
   version: d8f796af33cc11cb798c1aaeb27a4ebc5099927d
   subpackages:
@@ -29,6 +31,8 @@ imports:
   version: a4620f9913d19f03a6bf19b2f304daaaf83ea130
 - name: github.com/hashicorp/yamux
   version: 3520598351bb3500a49ae9563f5539666ae0a27c
+- name: github.com/jszwedko/go-circleci
+  version: 0a3be77f5b958d0b3a1238c4ed350d0eb5cf3991
 - name: github.com/mattermost/go-i18n
   version: 9a9b2eb57c9f39e7142fe48a35f047716c444ed1
   subpackages:
@@ -39,7 +43,7 @@ imports:
 - name: github.com/mattermost/ldap
   version: fee0a369f21be68ea3d647c0da8272a352fa1528
 - name: github.com/mattermost/mattermost-server
-  version: f4f7fd0829d74fcd5e290fd1ba76845af18e553e
+  version: c81e4f87c20a717b1dc52b2b77780fa789e19148
   subpackages:
   - mlog
   - model
@@ -58,7 +62,7 @@ imports:
 - name: github.com/pelletier/go-toml
   version: 4e9e0ee19b60b13eb79915933f44d8ed5f268bdd
 - name: github.com/pkg/errors
-  version: f15c970de5b76fac0b59abb32d62c17cc7bed265
+  version: ba968bfe8b2f7e042a574c888954fccecfa385b4
 - name: github.com/pmezard/go-difflib
   version: 5d4384ee4fb2527b0a1256a821ebfc92f91efefc
   subpackages:
@@ -69,9 +73,13 @@ imports:
   - assert
   - require
 - name: go.uber.org/atomic
-  version: df976f2515e274675050de7b3f42545de80594fd
+  version: 40ae6a40a970ef4cdbffa7b24b280e316db8accc
 - name: go.uber.org/multierr
-  version: 71e610a0e48dbda460d9c18adca8b5f2de04a7c1
+  version: 824d08f79702fe5f54aca8400aa0d754318786e7
+- name: go.uber.org/tools
+  version: 2cfd321de3ee5d5f8a5fda2521d1703478334d98
+  subpackages:
+  - update-license
 - name: go.uber.org/zap
   version: 2dc8d10634f473f4dc678e48391a9dc8cf6ae6f9
   subpackages:
@@ -85,6 +93,10 @@ imports:
   subpackages:
   - bcrypt
   - blowfish
+- name: golang.org/x/lint
+  version: fdd1cda4f05fd1fd86124f0ef9ce31a0b72c8448
+  subpackages:
+  - golint
 - name: golang.org/x/net
   version: aaf60122140d3fcf75376d319f0554393160eb50
   subpackages:
@@ -112,6 +124,26 @@ imports:
   - transform
   - unicode/bidi
   - unicode/norm
+- name: golang.org/x/tools
+  version: ecd32218bd7f33fd31c1abbfb74283690bedd093
+  subpackages:
+  - go/analysis
+  - go/analysis/passes/inspect
+  - go/ast/astutil
+  - go/ast/inspector
+  - go/buildutil
+  - go/gcexportdata
+  - go/internal/cgo
+  - go/internal/gcimporter
+  - go/internal/packagesdriver
+  - go/loader
+  - go/packages
+  - go/types/objectpath
+  - go/types/typeutil
+  - internal/fastwalk
+  - internal/gopathwalk
+  - internal/semver
+  - internal/span
 - name: google.golang.org/genproto
   version: c66870c02cf823ceb633bcd05be3c7cda29976f4
   subpackages:
@@ -152,4 +184,36 @@ imports:
   version: a96e63847dc3c67d17befa69c303767e2f84e54f
 - name: gopkg.in/yaml.v2
   version: 51d6538a90f86fe93ac480b35f37b2be17fef232
+- name: honnef.co/go/tools
+  version: dfe37feaecf7b73ce53f4fb8fa347265a77c6c4b
+  subpackages:
+  - arg
+  - cmd/staticcheck
+  - code
+  - config
+  - deprecated
+  - edit
+  - facts
+  - functions
+  - go/types/typeutil
+  - internal/cache
+  - internal/passes/buildir
+  - internal/renameio
+  - internal/robustio
+  - internal/sharedcheck
+  - ir
+  - ir/irutil
+  - lint
+  - lint/lintdsl
+  - lint/lintutil
+  - lint/lintutil/format
+  - loader
+  - pattern
+  - printf
+  - report
+  - simple
+  - staticcheck
+  - stylecheck
+  - unused
+  - version
 testImports: []

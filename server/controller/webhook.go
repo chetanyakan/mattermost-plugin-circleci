@@ -23,10 +23,10 @@ var texts = map[string]string{
 	"failure": "CircleCI build failure",
 }
 
-var submitSurveyResponse = &Endpoint{
+var circleCIBuildFinished = &Endpoint{
 	Path:         "/submit",
 	Method:       http.MethodPost,
-	Execute:      executeSubmitSurveyResponse,
+	Execute:      handleCircleCIBuildFinished,
 	RequiresAuth: false,
 }
 
@@ -47,15 +47,13 @@ type APIResponse struct {
 	WorkflowID  string `json:"workflow_id"`
 }
 
-func executeSubmitSurveyResponse(w http.ResponseWriter, r *http.Request) error {
+func handleCircleCIBuildFinished(w http.ResponseWriter, r *http.Request) error {
 	var response APIResponse
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&response); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return errors.Wrap(err, "failed to decode request body into survey response object")
 	}
-
-	fmt.Println(response)
 
 	var post *model.Post
 	if response.Status == "failure" {

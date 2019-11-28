@@ -28,8 +28,6 @@ var commands = map[string]*Config{
 	commandConnect().Command.Trigger:    commandConnect(),
 	commandDisconnect().Command.Trigger: commandDisconnect(),
 	commandMe().Command.Trigger:         commandMe(),
-	// commandRemoveMembers().Command.Trigger: commandRemoveMembers(),
-	// commandStandup().Command.Trigger:       commandStandup(),
 	// commandHelp().Command.Trigger:          commandHelp(),
 }
 

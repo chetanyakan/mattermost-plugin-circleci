@@ -1,9 +1,9 @@
 package command
 
 import (
+	circleci "github.com/jszwedko/go-circleci"
 	"github.com/mattermost/mattermost-server/model"
 
-	"github.com/chetanyakan/mattermost-plugin-circleci/server/circleci"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/config"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/util"
 )
