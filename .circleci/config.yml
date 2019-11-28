@@ -2,13 +2,13 @@ version: 2.0
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.12-node
+      - image: circleci/golang:1.13-node
     working_directory: /go/src/github.com/chetanyakan/mattermost-plugin-circleci
     steps:
       - checkout
       - restore_cache:
           name: Restore Golang dependencies cache
-          key: dependency-cache-{{ checksum "./server/glide.lock" }}
+          key: dependency-cache-{{ checksum "./server/go.sum" }}
       - restore_cache:
           name: Restore NPM dependencies cache
           key: dependency-cache-{{ checksum "./webapp/package-lock.json" }}
@@ -19,7 +19,7 @@ jobs:
             TERM: dumb
       - save_cache:
           name: Save Golang dependencies cache
-          key: dependency-cache-{{ checksum "./server/glide.lock" }}
+          key: dependency-cache-{{ checksum "./server/go.sum" }}
           paths:
               - ./server/vendor
       - save_cache:
