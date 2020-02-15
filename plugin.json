@@ -1,18 +1,26 @@
 {
     "id": "circleci",
-    "version": "0.0.1",
-    "name": "CircleCI Plugin",
-    "description": "",
+    "name": "CircleCI",
+    "description": "CircleCI Plugin for Mattermost.",
+    "version": "0.1.0",
+    "min_server_version": "5.12.0",
     "server": {
-        "executable": "server/plugin.exe"
+        "executables": {
+            "linux-amd64": "server/dist/plugin-linux-amd64",
+            "darwin-amd64": "server/dist/plugin-darwin-amd64",
+            "windows-amd64": "server/dist/plugin-windows-amd64.exe"
+        }
     },
     "settings_schema": {
+        "header": "",
+        "footer": "",
         "settings": [
             {
-                "key": "EncryptionKey",
-                "display_name": "At Rest Encryption Key",
+                "key": "Secret",
+                "display_name": "Webhook Secret:",
                 "type": "generated",
-                "help_text": "The AES encryption key used to encrypt stored access tokens."
+                "help_text": "The Webhook Secret used to authenticate CircleCI notifications.",
+                "regenerate_help_text": "Regenerates the webhook secret. Regenerating the secret invalidates your existing integrations."
             }
         ]
     }

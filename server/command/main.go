@@ -31,12 +31,11 @@ var commands = map[string]*Config{
 	// commandHelp().Command.Trigger:          commandHelp(),
 }
 
-func postCommandResponse(args *model.CommandArgs, text string) {
-	botUserID := config.GetConfig().BotUserID
+func sendEphemeralMessage(userID, channelID, message string) {
 	post := &model.Post{
-		UserId:    botUserID,
-		ChannelId: args.ChannelId,
-		Message:   text,
+		UserId:    config.BotUserID,
+		ChannelId: channelID,
+		Message:   message,
 	}
-	_ = config.Mattermost.SendEphemeralPost(args.UserId, post)
+	_ = config.Mattermost.SendEphemeralPost(userID, post)
 }

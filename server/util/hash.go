@@ -8,6 +8,6 @@ import (
 // GetKeyHash can be used to create a hash from a string
 func GetKeyHash(key string) string {
 	hash := sha256.New()
-	hash.Write([]byte(key))
+	_, _ = hash.Write([]byte(key))
 	return base64.StdEncoding.EncodeToString(hash.Sum(nil))
 }

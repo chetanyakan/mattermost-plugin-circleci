@@ -7,26 +7,16 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          name: Restore Golang dependencies cache
-          key: dependency-cache-{{ checksum "./server/go.sum" }}
-      - restore_cache:
-          name: Restore NPM dependencies cache
-          key: dependency-cache-{{ checksum "./webapp/package-lock.json" }}
+          key: go-mod-v1-{{ checksum "go.sum" }}
       - type: shell
-        name: 'Build artifacts'
-        command: make dist
+        name: 'Checks the code style, tests, builds and bundles the plugin.'
+        command: make all
         environment:
-            TERM: dumb
+          TERM: dumb
       - save_cache:
-          name: Save Golang dependencies cache
-          key: dependency-cache-{{ checksum "./server/go.sum" }}
+          key: go-mod-v1-{{ checksum "go.sum" }}
           paths:
-              - ./server/vendor
-      - save_cache:
-          name: Save NPM dependencies cache
-          key: dependency-cache-{{ checksum "./webapp/package-lock.json" }}
-          paths:
-              - ./webapp/node_modules
+            - "/go/pkg/mod"
       - store_artifacts:
           path: ./dist
           destination: build

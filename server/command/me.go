@@ -26,10 +26,10 @@ func commandMe() *Config {
 func validateMe(args []string, context Context) (*model.CommandResponse, *model.AppError) {
 	authToken, appErr := config.Mattermost.KVGet(context.CommandArgs.UserId + "_auth_token")
 	if appErr != nil {
-		return util.SendEphemeralText(appErr.Error())
+		return util.SendEphemeralCommandResponse(appErr.Error())
 	}
 	if string(authToken) == "" {
-		return util.SendEphemeralText("Not connected. Please connect and try again later.")
+		return util.SendEphemeralCommandResponse("Not connected. Please connect and try again later.")
 	}
 	return nil, nil
 }
@@ -39,7 +39,7 @@ func executeMe(args []string, context Context) (*model.CommandResponse, *model.A
 	client := &circleci.Client{Token: string(authToken)}
 	user, err := client.Me()
 	if err != nil {
-		return util.SendEphemeralText("Unable to connect to circleci. Make sure the auth token is still valid. " + err.Error())
+		return util.SendEphemeralCommandResponse("Unable to connect to circleci. Make sure the auth token is still valid. " + err.Error())
 	}
 
 	attachment := &model.SlackAttachment{

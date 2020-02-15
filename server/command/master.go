@@ -37,7 +37,7 @@ func getAvailableCommands() []string {
 func validateCommandMaster(args []string, context Context) (*model.CommandResponse, *model.AppError) {
 	// validate that a command is specified
 	if len(args) == 0 {
-		return util.SendEphemeralText("Please specify a command")
+		return util.SendEphemeralCommandResponse("Please specify a command")
 	}
 
 	subCommand := args[0]
@@ -45,7 +45,7 @@ func validateCommandMaster(args []string, context Context) (*model.CommandRespon
 
 	// validate sub-command exists
 	if !ok {
-		return util.SendEphemeralText("Invalid command: " + subCommand)
+		return util.SendEphemeralCommandResponse("Invalid command: " + subCommand)
 	}
 
 	// add sub-command in props so we don't need to extract it again

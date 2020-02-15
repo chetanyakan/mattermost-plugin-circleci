@@ -1,14 +1,15 @@
 package config
 
 import (
+	"errors"
+	"strings"
+
 	"github.com/mattermost/mattermost-server/plugin"
 	"go.uber.org/atomic"
 )
 
 const (
-	CommandPrefix             = PluginName
-	URLMappingKeyPrefix       = "url_"
-	ServerExeToWebappRootPath = "/../webapp"
+	CommandPrefix = "circleci"
 
 	URLPluginBase = "/plugins/" + PluginName
 	URLStaticBase = URLPluginBase + "/static"
@@ -23,10 +24,11 @@ const (
 var (
 	config     atomic.Value
 	Mattermost plugin.API
+	BotUserID  string
 )
 
 type Configuration struct {
-	BotUserID string `json:"BotUserID,omitempty"`
+	Secret string `json:"Secret"`
 }
 
 func GetConfig() *Configuration {
@@ -37,15 +39,18 @@ func SetConfig(c *Configuration) {
 	config.Store(c)
 }
 
+// ProcessConfiguration is used for post-processing on configuration.
 func (c *Configuration) ProcessConfiguration() error {
-	// any post-processing on configurations goes here
+	c.Secret = strings.TrimSpace(c.Secret)
 
 	return nil
 }
 
+// IsValid is used for config validations.
 func (c *Configuration) IsValid() error {
-	// Add config validations here.
-	// Check for required fields, formats, etc.
+	if c.Secret == "" {
+		return errors.New("please provide the Webhook Secret")
+	}
 
 	return nil
 }

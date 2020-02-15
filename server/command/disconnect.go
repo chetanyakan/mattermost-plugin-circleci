@@ -24,10 +24,10 @@ func commandDisconnect() *Config {
 func validateDisconnect(args []string, context Context) (*model.CommandResponse, *model.AppError) {
 	authToken, appErr := config.Mattermost.KVGet(context.CommandArgs.UserId + "_auth_token")
 	if appErr != nil {
-		return util.SendEphemeralText(appErr.Error())
+		return util.SendEphemeralCommandResponse(appErr.Error())
 	}
 	if string(authToken) == "" {
-		return util.SendEphemeralText("Not connected. Please connect and try again later.")
+		return util.SendEphemeralCommandResponse("Not connected. Please connect and try again later.")
 	}
 
 	return nil, nil
@@ -35,8 +35,8 @@ func validateDisconnect(args []string, context Context) (*model.CommandResponse,
 
 func executeDisconnect(args []string, context Context) (*model.CommandResponse, *model.AppError) {
 	if err := config.Mattermost.KVDelete(context.CommandArgs.UserId + "_auth_token"); err != nil {
-		return util.SendEphemeralText("Unable to disconnect. Error: " + err.Error())
+		return util.SendEphemeralCommandResponse("Unable to disconnect. Error: " + err.Error())
 	}
 
-	return util.SendEphemeralText("Successfully disconnected.")
+	return util.SendEphemeralCommandResponse("Successfully disconnected.")
 }
