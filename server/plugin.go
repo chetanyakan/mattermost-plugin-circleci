@@ -31,7 +31,7 @@ func (p *Plugin) OnActivate() error {
 		return err
 	}
 
-	if err := p.registerCommands(); err != nil {
+	if err := p.registerCommand(); err != nil {
 		config.Mattermost.LogError(err.Error())
 		return err
 	}
@@ -93,10 +93,11 @@ func (p *Plugin) OnConfigurationChange() error {
 	return nil
 }
 
-func (p *Plugin) registerCommands() error {
-	if err := config.Mattermost.RegisterCommand(command.Master().Command); err != nil {
-		config.Mattermost.LogError("Cound't register command", err, map[string]interface{}{"command": command.Master().Command.Trigger})
-		return err
+func (p *Plugin) registerCommand() error {
+	for trigger, handler := range command.HandlersList {
+		if err := config.Mattermost.RegisterCommand(handler.Command); err != nil {
+			return errors.Wrap(err, "failed to register slash command: "+trigger)
+		}
 	}
 
 	return nil
@@ -108,31 +109,20 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		return util.SendEphemeralCommandResponse(argErr.Error())
 	}
 
-	cmdName := split[0]
+	cmdName := split[0][1:]
 	var params []string
 
 	if len(split) > 1 {
 		params = split[1:]
 	}
 
-	if cmdName != "/"+command.Master().Command.Trigger {
-		return nil, &model.AppError{Message: "Unknown command: [" + cmdName + "] encountered"}
+	handler, ok := command.HandlersList[cmdName]
+	if !ok {
+		return util.SendEphemeralCommandResponse("Unknown command: [" + cmdName + "] encountered")
 	}
 
-	context := p.prepareContext(args)
-	if response, err := command.Master().Validate(params, context); response != nil {
-		return response, err
-	}
-
-	config.Mattermost.LogInfo("Executing command: " + cmdName + " with params: [" + strings.Join(params, ", ") + "]")
-	return command.Master().Execute(params, context)
-}
-
-func (p *Plugin) prepareContext(args *model.CommandArgs) command.Context {
-	return command.Context{
-		CommandArgs: args,
-		Props:       make(map[string]interface{}),
-	}
+	config.Mattermost.LogDebug("Executing command: " + cmdName + " with params: [" + strings.Join(params, ", ") + "]")
+	return handler.Handle(args, params...)
 }
 
 func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
