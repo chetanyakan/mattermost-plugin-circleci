@@ -8,40 +8,23 @@ import (
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/util"
 )
 
-func commandConnect() *Config {
-	return &Config{
-		Command: &model.Command{
-			Trigger:          "connect",
-			AutoComplete:     true,
-			AutoCompleteDesc: "Connect to your circleci account.",
-			AutoCompleteHint: "<auth-token>",
-		},
-		HelpText: "* auth token can be specified here.",
-		Validate: validateConnect,
-		Execute:  executeConnect,
-	}
-}
-
-func validateConnect(args []string, context Context) (*model.CommandResponse, *model.AppError) {
+func executeConnect(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
 	// we need the auth token
 	if len(args) < 1 {
-		return util.SendEphemeralText("Please specify the auth token")
+		return util.SendEphemeralCommandResponse("Please specify the auth token.")
 	}
 
-	return nil, nil
-}
-
-func executeConnect(args []string, context Context) (*model.CommandResponse, *model.AppError) {
 	authToken := args[0]
 	client := &circleci.Client{Token: authToken}
 	user, err := client.Me()
 	if err != nil {
-		return util.SendEphemeralText("Unable to connect to circleci. Make sure the auth token is valid. " + err.Error())
+		return util.SendEphemeralCommandResponse("Unable to connect to circleci. Make sure the auth token is valid. Error: " + err.Error())
 	}
 
-	if err := config.Mattermost.KVSet(context.CommandArgs.UserId+"_auth_token", []byte(authToken)); err != nil {
-		return util.SendEphemeralText("Unable to save auth token to KVStore" + err.Error())
+	if err := config.Mattermost.KVSet(context.UserId+"_auth_token", []byte(authToken)); err != nil {
+		config.Mattermost.LogError("Unable to save auth token to KVStore. Error: " + err.Error())
+		return nil, err
 	}
 
-	return util.SendEphemeralText("Successfully connected to circleci account: " + user.Login)
+	return util.SendEphemeralCommandResponse("Successfully connected to circleci account: " + user.Login)
 }

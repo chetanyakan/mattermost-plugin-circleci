@@ -8,6 +8,14 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Min - since math.Min is for floats and casting to and from floats is dangerous.
+func Min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 // SplitArgs is used to split a string to an array of arguments with separators: "(quotes) and spaces
 // We cant use strings.split as it includes empty string if deliminator is the last character in input string
 func SplitArgs(s string) ([]string, error) {
@@ -40,7 +48,7 @@ func SplitArgs(s string) ([]string, error) {
 
 	for _, arg := range args {
 		if arg != "" {
-			cleanedArgs[count] = arg
+			cleanedArgs[count] = strings.TrimSpace(arg)
 			count++
 		}
 	}
@@ -48,16 +56,8 @@ func SplitArgs(s string) ([]string, error) {
 	return cleanedArgs[0:count], nil
 }
 
-// Min is used here as math.Min is for floats and casting to and from floats is dangerous.
-func Min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-// SendEphemeralText can be used to return an ephemeral message as the response for a slash command
-func SendEphemeralText(msg string) (*model.CommandResponse, *model.AppError) {
+// SendEphemeralCommandResponse can be used to return an ephemeral message as the response for a slash command
+func SendEphemeralCommandResponse(msg string) (*model.CommandResponse, *model.AppError) {
 	return &model.CommandResponse{
 		Type: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
 		Text: msg,
