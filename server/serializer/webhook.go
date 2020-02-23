@@ -37,11 +37,7 @@ type CircleCIWebhookRequest struct {
 	WorkflowID  string `json:"workflow_id"`
 }
 
-func (r *CircleCIWebhookRequest) GenerateFailurePost() *model.Post {
-	if r == nil {
-		return nil
-	}
-
+func (r *CircleCIWebhookRequest) getSlackAttachmentFields() []*model.SlackAttachmentField {
 	slackAttachmentFields := []*model.SlackAttachmentField{
 		{
 			Title: "Tag",
@@ -85,10 +81,18 @@ func (r *CircleCIWebhookRequest) GenerateFailurePost() *model.Post {
 		},
 	}
 
+	return slackAttachmentFields
+}
+
+func (r *CircleCIWebhookRequest) GenerateFailurePost() *model.Post {
+	if r == nil {
+		return nil
+	}
+
 	attachment := &model.SlackAttachment{
 		Color:    "#d10c20",
 		Title:    fmt.Sprintf("Oops. Build [%s](%s) failed.", r.BuildNum, r.BuildURL),
-		Fields:   slackAttachmentFields,
+		Fields:   r.getSlackAttachmentFields(),
 		ThumbURL: "/plugins/" + config.PluginName + "/static/icon_failed.png",
 	}
 
@@ -106,53 +110,10 @@ func (r *CircleCIWebhookRequest) GenerateSuccessPost() *model.Post {
 		return nil
 	}
 
-	slackAttachmentFields := []*model.SlackAttachmentField{
-		{
-			Title: "Tag",
-			Value: r.Tag,
-			Short: true,
-		},
-		{
-			Title: "Branch",
-			Value: r.Branch,
-			Short: true,
-		},
-		{
-			Title: "Triggered By",
-			Value: r.Username,
-			Short: true,
-		},
-		{
-			Title: "Commit",
-			Value: r.Commit,
-			Short: true,
-		},
-		{
-			Title: "Organisation/User",
-			Value: r.OrgName,
-			Short: true,
-		},
-		{
-			Title: "Repo",
-			Value: r.RepoName,
-			Short: true,
-		},
-		{
-			Title: "Job",
-			Value: r.Job,
-			Short: true,
-		},
-		{
-			Title: "Workflow ID",
-			Value: r.WorkflowID,
-			Short: true,
-		},
-	}
-
 	attachment := &model.SlackAttachment{
 		Color:    "#41aa58",
 		Title:    fmt.Sprintf("Build [%s](%s) passed.", r.BuildNum, r.BuildURL),
-		Fields:   slackAttachmentFields,
+		Fields:   r.getSlackAttachmentFields(),
 		ThumbURL: "/plugins/" + config.PluginName + "/static/icon_success.png",
 	}
 
