@@ -31,7 +31,7 @@ func (p *Plugin) OnActivate() error {
 		return err
 	}
 
-	if err := p.registerCommand(); err != nil {
+	if err := p.registerCommands(); err != nil {
 		config.Mattermost.LogError(err.Error())
 		return err
 	}
@@ -93,8 +93,8 @@ func (p *Plugin) OnConfigurationChange() error {
 	return nil
 }
 
-func (p *Plugin) registerCommand() error {
-	for trigger, handler := range command.HandlersList {
+func (p *Plugin) registerCommands() error {
+	for trigger, handler := range command.Handlers {
 		if err := config.Mattermost.RegisterCommand(handler.Command); err != nil {
 			return errors.Wrap(err, "failed to register slash command: "+trigger)
 		}
@@ -116,7 +116,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		params = split[1:]
 	}
 
-	handler, ok := command.HandlersList[cmdName]
+	handler, ok := command.Handlers[cmdName]
 	if !ok {
 		return util.SendEphemeralCommandResponse("Unknown command: [" + cmdName + "] encountered")
 	}

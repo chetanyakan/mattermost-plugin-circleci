@@ -24,6 +24,6 @@ func (ch Handler) Handle(context *model.CommandArgs, args ...string) (*model.Com
 	return ch.defaultHandler(context, args...)
 }
 
-var HandlersList = map[string]Handler{
+var Handlers = map[string]Handler{
 	CircleCICommandHandler.Command.Trigger: CircleCICommandHandler,
 }
