@@ -6,6 +6,8 @@ import (
 
 	"github.com/mattermost/mattermost-server/model"
 	"github.com/pkg/errors"
+
+	"github.com/chetanyakan/mattermost-plugin-circleci/server/config"
 )
 
 // Min - since math.Min is for floats and casting to and from floats is dangerous.
@@ -57,9 +59,11 @@ func SplitArgs(s string) ([]string, error) {
 }
 
 // SendEphemeralCommandResponse can be used to return an ephemeral message as the response for a slash command
-func SendEphemeralCommandResponse(msg string) (*model.CommandResponse, *model.AppError) {
+func SendEphemeralCommandResponse(message string) (*model.CommandResponse, *model.AppError) {
 	return &model.CommandResponse{
-		Type: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-		Text: msg,
+		Username: config.BotDisplayName,
+		IconURL:  config.BotIconURL,
+		Type:     model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
+		Text:     message,
 	}, nil
 }
