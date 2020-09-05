@@ -186,15 +186,16 @@ func executeListRecentBuilds(context *model.CommandArgs, args ...string) (*model
 	pipelineCache := map[string]circleci2.Pipeline{}
 	userCache := map[string]circleci2.User{}
 
-	text := "Recent Builds:\n"
-	for _, build := range builds.Items {
+	title := "Recent Builds"
+	attachments := []*model.SlackAttachment{}
+	for _, build := range builds.Items[:10] {
 		var workflow circleci2.Workflow
 
 		if _, exists := workflowCache[build.Id]; exists {
 			workflow = workflowCache[build.Id]
 		} else {
 			workflow, _, err = client.WorkflowApi.GetWorkflowById(nil, build.Id)
-			if err != nil {		
+			if err != nil {
 				config.Mattermost.LogError("Unable to fetch workflow for ID: " + build.Id + ". Error: " + err.Error())
 				return util.SendEphemeralCommandResponse("Unable to fetch data from CircleCI. Please try again.")
 			}
@@ -224,20 +225,51 @@ func executeListRecentBuilds(context *model.CommandArgs, args ...string) (*model
 			}
 		}
 
-
-		text += fmt.Sprintf("- [%s/%s](%s): %s. Build: [%d](%s). Status: %s\n", triggeredBy.Login, build.Status, pipeline.Vcs.OriginRepositoryUrl, pipeline.Vcs.Branch, workflow.PipelineNumber, "example.com", build.Status)
-	}
-
-	attachment := &model.SlackAttachment{
-		Color: "#7FC1EE",
-		Text:  text,
+		attachments = append(attachments, &model.SlackAttachment{
+			Title: fmt.Sprintf("https://app.circleci.com/pipelines/%s/%s/473/workflows/%s/", account, repo, workflow.Id),
+			Color: "#04AA51",
+			ThumbURL: "/plugins/" + config.PluginName + "/static/circleci-blue.png",
+			Fields: []*model.SlackAttachmentField{
+				{
+					Short: true,
+					Title: "Triggered By",
+					Value: triggeredBy.Login,
+				},
+				{
+					Short: true,
+					Title: "Status",
+					Value: build.Status,
+				},
+				{
+					Short: true,
+					Title: "VCS",
+					Value: pipeline.Vcs.OriginRepositoryUrl,
+				},
+				{
+					Short: true,
+					Title: "Branch",
+					Value: pipeline.Vcs.Branch,
+				},
+				{
+					Short: true,
+					Title: "Pipeline Number",
+					Value: workflow.PipelineNumber,
+				},
+				{
+					Short: true,
+					Title: "Branch",
+					Value: pipeline.Vcs.Branch,
+				},
+			},
+		})
 	}
 
 	return &model.CommandResponse{
 		Username:    config.BotDisplayName,
 		IconURL:     config.BotIconURL,
 		Type:        model.COMMAND_RESPONSE_TYPE_IN_CHANNEL,
-		Attachments: []*model.SlackAttachment{attachment},
+		Text: title,
+		Attachments: attachments,
 	}, nil
 }
 
