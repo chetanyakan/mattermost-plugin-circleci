@@ -3,7 +3,7 @@ package command
 import (
 	"fmt"
 	circleci2 "github.com/TomTucka/go-circleci/circleci"
-	"github.com/jszwedko/go-circleci"
+	"github.com/antihax/optional"
 	"github.com/mattermost/mattermost-server/model"
 	"github.com/mattermost/mattermost-server/utils"
 	"time"
@@ -14,6 +14,8 @@ import (
 
 const (
 	invalidCommand = "Invalid command parameters. Please use `/circleci help` for more information."
+	HeadTypeBranch = "branch"
+	HeadTypeTag = "tag"
 )
 
 var CircleCICommandHandler = Handler{
@@ -31,7 +33,6 @@ var CircleCICommandHandler = Handler{
 		"connect":       executeConnect,
 		"disconnect":    executeDisconnect,
 		"me":            executeMe,
-		"projects":      executeListProjects,
 		"build":         executeBuild,
 		"recent/builds": executeListRecentBuilds,
 	},
@@ -117,45 +118,6 @@ func executeMe(context *model.CommandArgs, args ...string) (*model.CommandRespon
 				Short: true,
 			},
 		},
-	}
-
-	return &model.CommandResponse{
-		Username:    config.BotDisplayName,
-		IconURL:     config.BotIconURL,
-		Type:        model.COMMAND_RESPONSE_TYPE_IN_CHANNEL,
-		Attachments: []*model.SlackAttachment{attachment},
-	}, nil
-}
-
-func executeListProjects(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
-	authToken, appErr := config.Mattermost.KVGet(context.UserId + "_auth_token")
-	if appErr != nil {
-		return nil, appErr
-	}
-	if string(authToken) == "" {
-		return util.SendEphemeralCommandResponse("Not connected. Please connect and try again later.")
-	}
-
-	client := &circleci.Client{Token: string(authToken)}
-	projects, err := client.ListProjects()
-	if err != nil {
-		return util.SendEphemeralCommandResponse("Unable to connect to circleci. Make sure the auth token is still valid. Error: " + err.Error())
-	}
-
-	text := fmt.Sprintf("Here's a list of projects you follow on CircleCI:\n\n| Project | URL | OSS | ENV VARS |\n| :---- | :----- | :---- | :---- |\n")
-	for _, project := range projects {
-		envVars, err := client.ListEnvVars(project.Username, project.Reponame)
-		if err != nil {
-			return util.SendEphemeralCommandResponse(fmt.Sprintf("Problem listing env vars for %s/%s: %v", project.Username, project.Reponame, err))
-		}
-
-		circleURL := fmt.Sprintf("https://circleci.com/gh/%s/%s", project.Username, project.Reponame)
-		text += fmt.Sprintf("| [%s/%s](%s) | %s | %t | %t |\n", project.Username, project.Reponame, project.VCSURL, circleURL, project.FeatureFlags.OSS, len(envVars) > 0)
-	}
-
-	attachment := &model.SlackAttachment{
-		Color: "#7FC1EE",
-		Text:  text,
 	}
 
 	return &model.CommandResponse{
@@ -287,38 +249,53 @@ func executeBuild(context *model.CommandArgs, args ...string) (*model.CommandRes
 		return util.SendEphemeralCommandResponse("Please specify the account, repo and branch names.")
 	}
 
-	account, repo, branch := args[0], args[1], args[2]
-	client := &circleci.Client{Token: string(authToken)}
-	build, err := client.Build(account, repo, branch)
+	vcsSlug, repo, headType, head := args[0], args[1], args[2], args[3]
+	client := util.GetCircleciClient(string(authToken))
+
+	// TODO need to add support for tag here
+	body := map[string]string{}
+
+	switch headType {
+	case HeadTypeBranch:
+		body[HeadTypeBranch] = head
+	case HeadTypeTag:
+		body[HeadTypeTag] = head
+	default:
+		return util.SendEphemeralCommandResponse(fmt.Sprintf("Invalid head type. Please specify one of `%s` or `%s`", HeadTypeBranch, HeadTypeTag))
+	}
+
+	build, _, err := client.PipelineApi.TriggerPipeline(nil, vcsSlug + "/" + repo, &circleci2.PipelineApiTriggerPipelineOpts{
+		Body:                optional.NewInterface(body),
+	})
 	if err != nil {
 		return util.SendEphemeralCommandResponse("Unable to connect to circleci. Make sure the auth token is still valid. Error: " + err.Error())
 	}
 
 	attachment := &model.SlackAttachment{
 		Color:   "#7FC1EE",
-		Pretext: fmt.Sprintf("CircleCI build %d initiated successfully.", build.BuildNum),
-		Text:    fmt.Sprintf("CircleCI build [%d](%s) initiated successfully.", build.BuildNum, build.BuildURL),
+		Pretext: fmt.Sprintf("CircleCI build %d initiated successfully.", build.Number),
+		Text:    fmt.Sprintf("CircleCI build [%d](%s) initiated successfully.", build.Number, "TODO URL"),
 		Fields: []*model.SlackAttachmentField{
 			{
 				Title: "User",
-				Value: build.User.Login,
+				Value: build.Number,
 				Short: false,
 			},
-			{
-				Title: "Account",
-				Value: build.Username,
-				Short: false,
-			},
-			{
-				Title: "Repo",
-				Value: build.Reponame,
-				Short: false,
-			},
-			{
-				Title: "Branch",
-				Value: build.Branch,
-				Short: false,
-			},
+			//{
+			//	Title: "Account",
+			//	Value: build.Username,
+			//	Short: false,
+			//},
+			//{
+			//	Title: "Repo",
+			//	Value: build.Reponame,
+			//	Short: false,
+			//},
+			//{
+			//	Title: "Branch",
+			//	Value: build.Branch,
+			//	Short: false,
+			//},
 		},
 	}
 
