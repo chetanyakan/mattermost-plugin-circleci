@@ -2,6 +2,8 @@ package command
 
 import (
 	"fmt"
+	"github.com/chetanyakan/mattermost-plugin-circleci/server/serializer"
+	"github.com/chetanyakan/mattermost-plugin-circleci/server/service"
 
 	circleci "github.com/jszwedko/go-circleci"
 	"github.com/mattermost/mattermost-server/model"
@@ -26,16 +28,77 @@ var CircleCICommandHandler = Handler{
 		IconURL:          config.BotIconURL,
 	},
 	handlers: map[string]HandlerFunc{
-		"connect":       executeConnect,
-		"disconnect":    executeDisconnect,
-		"me":            executeMe,
-		"projects":      executeListProjects,
-		"build":         executeBuild,
-		"recent/builds": executeListRecentBuilds,
+		"connect":            executeConnect,
+		"disconnect":         executeDisconnect,
+		"me":                 executeMe,
+		"subscribe":          executeSubscribe,
+		"unsubscribe":        executeUnsubscribe,
+		"list/subscriptions": executeListSubscriptions,
+		"projects":           executeListProjects,
+		"build":              executeBuild,
+		"recent/builds":      executeListRecentBuilds,
 	},
 	defaultHandler: func(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
 		return util.SendEphemeralCommandResponse(invalidCommand)
 	},
+}
+
+func executeSubscribe(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+	if len(args) != 3 {
+		return util.SendEphemeralCommandResponse("Invalid number of arguments. syntax: `/circleci subscribe [vcs-alias] [org-name] [repo-name]`")
+	}
+
+	vcs, err := service.GetVCS(args[0])
+	if err != nil {
+		return util.SendEphemeralCommandResponse(err.Error())
+	}
+
+	newSubscription := serializer.Subscription{
+		VCSType:   vcs.Type,
+		BaseURL:   vcs.BaseURL,
+		OrgName:   args[1],
+		RepoName:  args[2],
+		ChannelID: context.ChannelId,
+	}
+
+	if err := service.AddSubscription(newSubscription); err != nil {
+		return util.SendEphemeralCommandResponse("Failed to add subscription. Please try again later. If the problem persists, contact your system administrator.")
+	}
+
+	return util.SendEphemeralCommandResponse("Subscription added successfully.")
+}
+
+func executeUnsubscribe(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+	if len(args) != 3 {
+		return util.SendEphemeralCommandResponse("Invalid number of arguments. syntax: `/circleci unsubscribe [vcs-alias] [org-name] [repo-name]`")
+	}
+
+	vcs, err := service.GetVCS(args[0])
+	if err != nil {
+		return util.SendEphemeralCommandResponse(err.Error())
+	}
+
+	subscription := serializer.Subscription{
+		VCSType:   vcs.Type,
+		BaseURL:   vcs.BaseURL,
+		OrgName:   args[1],
+		RepoName:  args[2],
+		ChannelID: context.ChannelId,
+	}
+
+	if err := service.RemoveSubscription(subscription); err != nil {
+		return util.SendEphemeralCommandResponse("Failed to remove subscription. Please try again later. If the problem persists, contact your system administrator.")
+	}
+
+	return util.SendEphemeralCommandResponse("Subscription removed successfully.")
+}
+
+func executeListSubscriptions(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+	message, err := service.ListSubscriptions(context.ChannelId)
+	if err != nil {
+		return util.SendEphemeralCommandResponse("Unable to fetch the list of subscriptions. Please use `/circleci subscribe` to create a subscription.")
+	}
+	return util.SendEphemeralCommandResponse(message)
 }
 
 func executeConnect(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {

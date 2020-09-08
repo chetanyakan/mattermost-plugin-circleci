@@ -19,7 +19,13 @@ const (
 	BotUserName    = "circleci"
 	BotDisplayName = "CircleCI"
 	BotDescription = "Created by the CircleCI Plugin."
-	BotIconURL     = URLStaticBase + "/circleci.png"
+
+	BotIconURL        = URLStaticBase + "/circleci.png"
+	BotIconURLSuccess = URLStaticBase + "/circleci_success.png"
+	BotIconURLFailed  = URLStaticBase + "/circeci_failed.png"
+
+	WorkflowSuccessIconURL = URLStaticBase + "/icon_success.png"
+	WorkflowFailedIconURL  = URLStaticBase + "/icon_failed.png"
 )
 
 var (
