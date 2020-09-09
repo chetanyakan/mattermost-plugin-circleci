@@ -34,7 +34,7 @@ func (s *Subscription) Validate() error {
 	}
 
 	if s.RepoName == "" {
-		return errors.New("repo name is empty")
+		return errors.New("repo name cannot be empty")
 	}
 
 	return nil
