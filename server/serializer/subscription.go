@@ -30,7 +30,7 @@ func (s *Subscription) Validate() error {
 	}
 
 	if s.OrgName == "" {
-		return errors.New("org name is empty")
+		return errors.New("org name cannot be empty")
 	}
 
 	if s.RepoName == "" {
