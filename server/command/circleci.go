@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/serializer"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/service"
+	"github.com/chetanyakan/mattermost-plugin-circleci/server/store"
 
 	circleci "github.com/jszwedko/go-circleci"
-	"github.com/mattermost/mattermost-server/model"
+	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/config"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/util"
@@ -54,7 +55,7 @@ func executeSubscribe(context *model.CommandArgs, args ...string) (*model.Comman
 	}
 
 	newSubscription := serializer.Subscription{
-		VCSType:   vcs.Type,
+		VCSType:   vcs.Alias,
 		BaseURL:   vcs.BaseURL,
 		OrgName:   args[1],
 		RepoName:  args[2],
@@ -79,7 +80,7 @@ func executeUnsubscribe(context *model.CommandArgs, args ...string) (*model.Comm
 	}
 
 	subscription := serializer.Subscription{
-		VCSType:   vcs.Type,
+		VCSType:   vcs.Alias,
 		BaseURL:   vcs.BaseURL,
 		OrgName:   args[1],
 		RepoName:  args[2],
@@ -320,4 +321,32 @@ func executeBuild(context *model.CommandArgs, args ...string) (*model.CommandRes
 		Type:        model.COMMAND_RESPONSE_TYPE_IN_CHANNEL,
 		Attachments: []*model.SlackAttachment{attachment},
 	}, nil
+}
+
+func executeAddVCS(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+	if len(args) < 3 {
+		return util.SendEphemeralCommandResponse("Invalid number of arguments. Use this command as `/cirecleci add vcs [alias] [base URL]`")
+	}
+
+	alias, baseURL := args[1], args[2]
+
+	vcs, err := store.GetVCS(alias)
+	if err != nil {
+		return util.SendEphemeralCommandResponse("Failed to check for existing VCS with same alias. Please try again later. If the problem persists, contact your system administrator.")
+	}
+
+	if vcs != nil {
+		return util.SendEphemeralCommandResponse(fmt.Sprintf("Another VCS existis with the same alias. Please delete existing VCS first if you want to update it. Alias: `%s`, base URL: `%s`", vcs.Alias, vcs.BaseURL))
+	}
+
+	err := store.SaveVCS(&serializer.VCS{
+		Alias: alias,
+		BaseURL: baseURL,
+	})
+
+	if err != nil {
+		return util.SendEphemeralCommandResponse("Failed to save VCS. Please try again later. If the problem persists, contact your system administrator.")
+	}
+
+	return util.SendEphemeralCommandResponse("Successfully saved VCS.")
 }

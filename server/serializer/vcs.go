@@ -13,6 +13,6 @@ var (
 )
 
 type VCS struct {
-	Type    string `json:"type"`
+	Alias   string `json:"alias"`
 	BaseURL string `json:"base_url"`
 }

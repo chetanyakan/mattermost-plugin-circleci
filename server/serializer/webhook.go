@@ -3,7 +3,7 @@ package serializer
 import (
 	"fmt"
 
-	"github.com/mattermost/mattermost-server/model"
+	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/config"
 )

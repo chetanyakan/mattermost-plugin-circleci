@@ -8,11 +8,11 @@ import (
 var (
 	vcsList = map[string]serializer.VCS{
 		"github": {
-			Type:    serializer.VCSTypeGithub,
+			Alias:   serializer.VCSTypeGithub,
 			BaseURL: "https://github.com",
 		},
 		"bitbucket": {
-			Type:    serializer.VCSTypeBitbucket,
+			Alias:   serializer.VCSTypeBitbucket,
 			BaseURL: "https://bitbucket.org",
 		},
 	}
