@@ -33,7 +33,7 @@ func (s *Subscription) Validate() error {
 		return errors.New("org name cannot be empty")
 	}
 
-	if s.RepoName == "" {
+	if strings.TrimSpace(s.RepoName) == "" {
 		return errors.New("repo name cannot be empty")
 	}
 
