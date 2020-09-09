@@ -29,7 +29,7 @@ func (s *Subscription) Validate() error {
 		}
 	}
 
-	if s.OrgName == "" {
+	if strings.TrimSpace(s.OrgName) == "" {
 		return errors.New("org name cannot be empty")
 	}
 
