@@ -11,8 +11,8 @@ import (
 
 const (
 	subscriptionsKey = "subscriptions"
-	vcsKeyPrefix = "vcs_"
-	listVCSKey = "vcs_list"
+	vcsKeyPrefix     = "vcs_"
+	listVCSKey       = "vcs_list"
 )
 
 func getBytes(s interface{}) []byte {
@@ -77,7 +77,7 @@ func SaveVCS(vcs *serializer.VCS) error {
 		return err
 	}
 
-	if err := addToVCSList(vcs); err != nil {
+	if err := addToVCSList(*vcs); err != nil {
 		return err
 	}
 
@@ -112,26 +112,31 @@ func DeleteVCS(alias string) error {
 	return nil
 }
 
-func addToVCSList(vcs *serializer.VCS) error {
+func addToVCSList(vcs serializer.VCS) error {
 	vcsListData, appErr := config.Mattermost.KVGet(listVCSKey)
 	if appErr != nil {
 		config.Mattermost.LogError("Failed to fetch list of VCS from KV store. Error: " + appErr.Error())
 		return appErr
 	}
 
+	var dataToUnmarshal []byte
 	if len(vcsListData) == 0 {
-		vcsListData = []byte("[]")
+		dataToUnmarshal = []byte("[]")
+	} else {
+		dataToUnmarshal = vcsListData
 	}
 
-	var vcsList []serializer.VCS
-	if err := json.Unmarshal(vcsListData, &vcsList); err != nil {
+	var vcsList *[]serializer.VCS
+	if err := json.Unmarshal(dataToUnmarshal, &vcsList); err != nil {
 		config.Mattermost.LogError("Failed to unmarshal VCS list. Error: " + err.Error())
 		return err
 	}
 
-	vcsList = append(vcsList, *vcs)
+	config.Mattermost.LogInfo(fmt.Sprintf("%v", vcsList))
 
-	updatedVCSListData, err := json.Marshal(vcsList)
+	*vcsList = append(*vcsList, vcs)
+
+	updatedVCSListData, err := json.Marshal(*vcsList)
 	if err != nil {
 		config.Mattermost.LogError("Failed to marshal updated VCS list. Error: " + err.Error())
 		return err
@@ -144,7 +149,7 @@ func addToVCSList(vcs *serializer.VCS) error {
 			return nil, err
 		}
 
-		vcsList = append(oldList, *vcs)
+		vcsList := append(oldList, vcs)
 		newList, err := json.Marshal(vcsList)
 		if err != nil {
 			config.Mattermost.LogError("Failed to marshal updated VCS list. Error: " + err.Error())

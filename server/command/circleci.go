@@ -352,15 +352,23 @@ func executeAddVCS(context *model.CommandArgs, args ...string) (*model.CommandRe
 		return util.SendEphemeralCommandResponse("Failed to save VCS. Please try again later. If the problem persists, contact your system administrator.")
 	}
 
-	return util.SendEphemeralCommandResponse("Successfully saved VCS.")
+	message := fmt.Sprintf("Successfully added VCS with alias `%s` and base URL `%s`", vcs.Alias, vcs.BaseURL)
+
+	_, _ = config.Mattermost.CreatePost(&model.Post{
+		UserId:    config.BotUserID,
+		ChannelId: context.ChannelId,
+		Message:   message,
+	})
+
+	return &model.CommandResponse{}, nil
 }
 
 func executeDeleteVCS(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
-	if len(args) < 3 {
+	if len(args) < 1 {
 		return util.SendEphemeralCommandResponse("Invalid number of arguments. Use this command as `/cirecleci delete vcs [alias]`")
 	}
 
-	alias := args[1]
+	alias := args[0]
 
 	existingVCS, err := store.GetVCS(alias)
 	if err != nil {
@@ -375,7 +383,15 @@ func executeDeleteVCS(context *model.CommandArgs, args ...string) (*model.Comman
 		return util.SendEphemeralCommandResponse("Failed to delete VCS. Please try again later. If the problem persists, contact your system administrator.")
 	}
 
-	return util.SendEphemeralCommandResponse("Successfully deleted VCS.")
+	message := fmt.Sprintf("Successfully deleted VCS with alias `%s`", alias)
+
+	_, _ = config.Mattermost.CreatePost(&model.Post{
+		UserId:    config.BotUserID,
+		ChannelId: context.ChannelId,
+		Message:   message,
+	})
+
+	return &model.CommandResponse{}, nil
 }
 
 func executeListVCS(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
@@ -384,15 +400,16 @@ func executeListVCS(context *model.CommandArgs, args ...string) (*model.CommandR
 		return util.SendEphemeralCommandResponse("Failed to fetch list of VCS. Please try again later. If the problem persists, contact your system administrator.")
 	}
 
-	message := "Available VCS -\n\n| Left-Aligned  | Center Aligned  | Right Aligned |"
+	message := "Available VCS -\n\n| No.  | Alias  | Base URL |\n|:------------|:------------|:------------|\n"
 	for i, vcs := range *vcsList {
-		message += fmt.Sprintf("|%d|%s|%s|", i+1, vcs.Alias, vcs.BaseURL)
+		message += fmt.Sprintf("|%d|%s|%s|\n", i+1, vcs.Alias, vcs.BaseURL)
 	}
 
-	return &model.CommandResponse{
-		Username: config.BotDisplayName,
-		IconURL:  config.BotIconURL,
-		Type:     model.COMMAND_RESPONSE_TYPE_IN_CHANNEL,
-		Text:     message,
-	}, nil
+	_, _ = config.Mattermost.CreatePost(&model.Post{
+		UserId:    config.BotUserID,
+		ChannelId: context.ChannelId,
+		Message:   message,
+	})
+
+	return &model.CommandResponse{}, nil
 }
