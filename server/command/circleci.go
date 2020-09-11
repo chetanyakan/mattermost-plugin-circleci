@@ -6,7 +6,7 @@ import (
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/service"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/store"
 
-	circleci "github.com/jszwedko/go-circleci"
+	"github.com/jszwedko/go-circleci"
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/config"
@@ -38,6 +38,9 @@ var CircleCICommandHandler = Handler{
 		"projects":           executeListProjects,
 		"build":              executeBuild,
 		"recent/builds":      executeListRecentBuilds,
+		"add/vcs":            executeAddVCS,
+		"delete/vcs":         executeDeleteVCS,
+		"list/vcs":           executeListVCS,
 	},
 	defaultHandler: func(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
 		return util.SendEphemeralCommandResponse(invalidCommand)
@@ -324,29 +327,72 @@ func executeBuild(context *model.CommandArgs, args ...string) (*model.CommandRes
 }
 
 func executeAddVCS(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
-	if len(args) < 3 {
+	config.Mattermost.LogInfo(fmt.Sprintf("%v", args))
+	if len(args) < 2 {
 		return util.SendEphemeralCommandResponse("Invalid number of arguments. Use this command as `/cirecleci add vcs [alias] [base URL]`")
 	}
 
-	alias, baseURL := args[1], args[2]
+	alias, baseURL := args[0], args[1]
 
-	vcs, err := store.GetVCS(alias)
+	existingVCS, err := store.GetVCS(alias)
 	if err != nil {
 		return util.SendEphemeralCommandResponse("Failed to check for existing VCS with same alias. Please try again later. If the problem persists, contact your system administrator.")
 	}
 
-	if vcs != nil {
-		return util.SendEphemeralCommandResponse(fmt.Sprintf("Another VCS existis with the same alias. Please delete existing VCS first if you want to update it. Alias: `%s`, base URL: `%s`", vcs.Alias, vcs.BaseURL))
+	if existingVCS != nil {
+		return util.SendEphemeralCommandResponse(fmt.Sprintf("Another VCS existis with the same alias. Please delete existing VCS first if you want to update it. Alias: `%s`, base URL: `%s`", existingVCS.Alias, existingVCS.BaseURL))
 	}
 
-	err := store.SaveVCS(&serializer.VCS{
-		Alias: alias,
+	vcs := &serializer.VCS{
+		Alias:   alias,
 		BaseURL: baseURL,
-	})
+	}
 
-	if err != nil {
+	if err := store.SaveVCS(vcs); err != nil {
 		return util.SendEphemeralCommandResponse("Failed to save VCS. Please try again later. If the problem persists, contact your system administrator.")
 	}
 
 	return util.SendEphemeralCommandResponse("Successfully saved VCS.")
+}
+
+func executeDeleteVCS(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+	if len(args) < 3 {
+		return util.SendEphemeralCommandResponse("Invalid number of arguments. Use this command as `/cirecleci delete vcs [alias]`")
+	}
+
+	alias := args[1]
+
+	existingVCS, err := store.GetVCS(alias)
+	if err != nil {
+		return util.SendEphemeralCommandResponse("Failed to check VCS. Please try again later. If the problem persists, contact your system administrator.")
+	}
+
+	if existingVCS == nil {
+		return util.SendEphemeralCommandResponse("No VCS exists with provided alias.")
+	}
+
+	if err := store.DeleteVCS(alias); err != nil {
+		return util.SendEphemeralCommandResponse("Failed to delete VCS. Please try again later. If the problem persists, contact your system administrator.")
+	}
+
+	return util.SendEphemeralCommandResponse("Successfully deleted VCS.")
+}
+
+func executeListVCS(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+	vcsList, err := store.GetVCSList()
+	if err != nil {
+		return util.SendEphemeralCommandResponse("Failed to fetch list of VCS. Please try again later. If the problem persists, contact your system administrator.")
+	}
+
+	message := "Available VCS -\n\n| Left-Aligned  | Center Aligned  | Right Aligned |"
+	for i, vcs := range *vcsList {
+		message += fmt.Sprintf("|%d|%s|%s|", i+1, vcs.Alias, vcs.BaseURL)
+	}
+
+	return &model.CommandResponse{
+		Username: config.BotDisplayName,
+		IconURL:  config.BotIconURL,
+		Type:     model.COMMAND_RESPONSE_TYPE_IN_CHANNEL,
+		Text:     message,
+	}, nil
 }
