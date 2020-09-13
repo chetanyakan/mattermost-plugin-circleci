@@ -2,11 +2,11 @@ package service
 
 import (
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/serializer"
-	"github.com/pkg/errors"
+	"github.com/chetanyakan/mattermost-plugin-circleci/server/store"
 )
 
 var (
-	vcsList = map[string]serializer.VCS{
+	defaultVCSList = map[string]serializer.VCS{
 		"github": {
 			Alias:   serializer.VCSTypeGithub,
 			BaseURL: "https://github.com",
@@ -19,9 +19,15 @@ var (
 )
 
 func GetVCS(alias string) (*serializer.VCS, error) {
-	vcs, found := vcsList[alias]
-	if !found {
-		return nil, errors.New("Invalid VCS alias. Please use 'github' or 'bitbucket'.")
+	// first we check for default VCS, then in custom VCS
+	if vcs, found := defaultVCSList[alias]; found {
+		return &vcs, nil
 	}
-	return &vcs, nil
+
+	vcs, err := store.GetVCS(alias)
+	if err != nil {
+		return nil, err
+	}
+
+	return vcs, nil
 }
