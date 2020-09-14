@@ -176,7 +176,7 @@ func executeListRecentBuilds(context *model.CommandArgs, args ...string) (*model
 	}
 
 	post := &model.Post{
-		UserId: config.BotUserID,
+		UserId:    config.BotUserID,
 		ChannelId: context.ChannelId,
 	}
 
@@ -228,6 +228,7 @@ func executeBuild(context *model.CommandArgs, args ...string) (*model.CommandRes
 			vcsSlug,
 			repo,
 			headType,
+			head,
 			err.Error(),
 			response,
 		))
@@ -251,6 +252,7 @@ func executeBuild(context *model.CommandArgs, args ...string) (*model.CommandRes
 			vcsSlug,
 			repo,
 			headType,
+			head,
 			err.Error(),
 			response,
 		))

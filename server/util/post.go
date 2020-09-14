@@ -9,7 +9,7 @@ func BaseSlackAttachment() *model.SlackAttachment {
 	return &model.SlackAttachment{
 		AuthorIcon: config.BotIconURL,
 		AuthorName: config.BotDisplayName,
-		Color:   "#7FC1EE",
-		ThumbURL: config.BotThumbnail,
+		Color:      "#7FC1EE",
+		ThumbURL:   config.BotThumbnail,
 	}
 }
