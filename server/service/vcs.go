@@ -21,7 +21,7 @@ var (
 func GetVCS(alias string) (*serializer.VCS, error) {
 	vcs, found := vcsList[alias]
 	if !found {
-		return nil, errors.New("Invalid VCS alias. Please use 'github' or 'bitbucket'.")
+		return nil, errors.New("invalid vcs alias. vcs not found. use `github` or `bitbucket`")
 	}
 	return &vcs, nil
 }
