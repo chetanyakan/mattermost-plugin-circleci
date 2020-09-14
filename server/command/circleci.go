@@ -6,6 +6,8 @@ import (
 	"github.com/antihax/optional"
 	"github.com/mattermost/mattermost-server/model"
 	"github.com/mattermost/mattermost-server/utils"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/config"
@@ -15,7 +17,7 @@ import (
 const (
 	invalidCommand = "Invalid command parameters. Please use `/circleci help` for more information."
 	HeadTypeBranch = "branch"
-	HeadTypeTag = "tag"
+	HeadTypeTag    = "tag"
 )
 
 var CircleCICommandHandler = Handler{
@@ -32,7 +34,6 @@ var CircleCICommandHandler = Handler{
 	handlers: map[string]HandlerFunc{
 		"connect":       executeConnect,
 		"disconnect":    executeDisconnect,
-		"me":            executeMe,
 		"build":         executeBuild,
 		"recent/builds": executeListRecentBuilds,
 	},
@@ -50,18 +51,13 @@ func executeConnect(ctx *model.CommandArgs, args ...string) (*model.CommandRespo
 	authToken := args[0]
 	conf := circleci2.NewConfiguration()
 	conf.AddDefaultHeader("Circle-Token", authToken)
-	client := circleci2.NewAPIClient(conf)
-	user, _, err := client.PreviewApi.GetCurrentUser(nil)
-	if err != nil {
-		return util.SendEphemeralCommandResponse("Unable to connect to circleci. Make sure the auth token is valid. Error: " + err.Error())
-	}
 
 	if err := config.Mattermost.KVSet(ctx.UserId+"_auth_token", []byte(authToken)); err != nil {
 		config.Mattermost.LogError("Unable to save auth token to KVStore. Error: " + err.Error())
 		return nil, err
 	}
 
-	return util.SendEphemeralCommandResponse(fmt.Sprintf("Successfully connected to circleci account: %s as %s", user.Name, user.Login))
+	return util.SendEphemeralCommandResponse(fmt.Sprintf("Successfully saved auth token."))
 }
 
 func executeDisconnect(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
@@ -81,53 +77,6 @@ func executeDisconnect(context *model.CommandArgs, args ...string) (*model.Comma
 	return util.SendEphemeralCommandResponse("Successfully disconnected.")
 }
 
-func executeMe(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
-	authToken, appErr := config.Mattermost.KVGet(context.UserId + "_auth_token")
-	if appErr != nil {
-		return nil, appErr
-	}
-	if string(authToken) == "" {
-		return util.SendEphemeralCommandResponse("Not connected. Please connect and try again later.")
-	}
-
-	client := util.GetCircleciClient(string(authToken))
-	user, _, err := client.PreviewApi.GetCurrentUser(nil)
-	if err != nil {
-		return util.SendEphemeralCommandResponse("Unable to connect to circleci. Make sure the auth token is still valid. " + err.Error())
-	}
-
-	attachment := &model.SlackAttachment{
-		Color:    "#7FC1EE",
-		Pretext:  fmt.Sprintf("Initiated by CircleCI user: %s", user.Login),
-		ThumbURL: "/plugins/" + config.PluginName + "/static/circleci-blue.png",
-		Title:    "CircleCI",
-		Fields: []*model.SlackAttachmentField{
-			{
-				Title: "Name",
-				Value: user.Name,
-				Short: true,
-			},
-			{
-				Title: "Username",
-				Value: user.Login,
-				Short: true,
-			},
-			{
-				Title: "ID",
-				Value: user.Id,
-				Short: true,
-			},
-		},
-	}
-
-	return &model.CommandResponse{
-		Username:    config.BotDisplayName,
-		IconURL:     config.BotIconURL,
-		Type:        model.COMMAND_RESPONSE_TYPE_IN_CHANNEL,
-		Attachments: []*model.SlackAttachment{attachment},
-	}, nil
-}
-
 func executeListRecentBuilds(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
 	authToken, appErr := config.Mattermost.KVGet(context.UserId + "_auth_token")
 	if appErr != nil {
@@ -138,8 +87,8 @@ func executeListRecentBuilds(context *model.CommandArgs, args ...string) (*model
 	}
 	client := util.GetCircleciClient(string(authToken))
 
-	account, repo, branch := args[0], args[1], args[2]
-	builds, _, err := client.InsightsApi.GetProjectWorkflowRuns(nil, account+"/"+repo, branch, utils.Yesterday(), utils.Yesterday().Add(2*24*time.Hour), nil)
+	vcs, repo, workflow := args[0], args[1], args[2]
+	builds, _, err := client.InsightsApi.GetProjectWorkflowRuns(nil, vcs+"/"+repo, workflow, utils.Yesterday(), utils.Yesterday().Add(2*24*time.Hour), nil)
 	if err != nil {
 		return util.SendEphemeralCommandResponse("Unable to connect to circleci. Make sure the auth token is still valid. Error: " + err.Error())
 	}
@@ -147,9 +96,9 @@ func executeListRecentBuilds(context *model.CommandArgs, args ...string) (*model
 	workflowCache := map[string]circleci2.Workflow{}
 	pipelineCache := map[string]circleci2.Pipeline{}
 	userCache := map[string]circleci2.User{}
+	//attachments := []*model.SlackAttachment{}
+	attachment := util.BaseSlackAttachment()
 
-	title := "Recent Builds"
-	attachments := []*model.SlackAttachment{}
 	for _, build := range builds.Items[:10] {
 		var workflow circleci2.Workflow
 
@@ -187,52 +136,57 @@ func executeListRecentBuilds(context *model.CommandArgs, args ...string) (*model
 			}
 		}
 
-		attachments = append(attachments, &model.SlackAttachment{
-			Title: fmt.Sprintf("https://app.circleci.com/pipelines/%s/%s/473/workflows/%s/", account, repo, workflow.Id),
-			Color: "#04AA51",
-			ThumbURL: "/plugins/" + config.PluginName + "/static/circleci-blue.png",
-			Fields: []*model.SlackAttachmentField{
-				{
-					Short: true,
-					Title: "Triggered By",
-					Value: triggeredBy.Login,
-				},
-				{
-					Short: true,
-					Title: "Status",
-					Value: build.Status,
-				},
-				{
-					Short: true,
-					Title: "VCS",
-					Value: pipeline.Vcs.OriginRepositoryUrl,
-				},
-				{
-					Short: true,
-					Title: "Branch",
-					Value: pipeline.Vcs.Branch,
-				},
-				{
-					Short: true,
-					Title: "Pipeline Number",
-					Value: workflow.PipelineNumber,
-				},
-				{
-					Short: true,
-					Title: "Branch",
-					Value: pipeline.Vcs.Branch,
-				},
+		attachment.Fields = append(attachment.Fields, []*model.SlackAttachmentField{
+			{
+				Short: false,
+				Title: "",
+				Value: "***",
 			},
-		})
+			{
+				Short: false,
+				Title: fmt.Sprintf("Build #%d", workflow.PipelineNumber),
+				Value: fmt.Sprintf("https://app.circleci.com/pipelines/%s/%s/%d/workflows/%s/", vcs, repo, workflow.PipelineNumber, workflow.Id),
+			},
+			{
+				Short: true,
+				Title: "Triggered By",
+				Value: triggeredBy.Login,
+			},
+			{
+				Short: true,
+				Title: "Status",
+				Value: build.Status,
+			},
+			{
+				Short: true,
+				Title: "VCS",
+				Value: pipeline.Vcs.OriginRepositoryUrl,
+			},
+			{
+				Short: true,
+				Title: "Branch",
+				Value: pipeline.Vcs.Branch,
+			},
+			{
+				Short: true,
+				Title: "Pipeline Number",
+				Value: workflow.PipelineNumber,
+			},
+		}...)
 	}
 
-	return &model.CommandResponse{
-		Username:    config.BotDisplayName,
-		IconURL:     config.BotIconURL,
-		Type:        model.COMMAND_RESPONSE_TYPE_IN_CHANNEL,
-		Text: title,
-		Attachments: attachments,
-	}, nil
+	post := &model.Post{
+		UserId: config.BotUserID,
+		ChannelId: context.ChannelId,
+	}
+
+	model.ParseSlackAttachment(post, []*model.SlackAttachment{attachment})
+	if _, err := config.Mattermost.CreatePost(post); err != nil {
+		config.Mattermost.LogError(fmt.Sprintf("Failed to create post for triggered workflow. ChannelID: %s, error: %s", context.ChannelId, err.Error()))
+		return util.SendEphemeralCommandResponse("Failed to create post for triggered workflow. The build has been triggered though. You can view it in CircleCI.")
+	}
+
+	return &model.CommandResponse{}, nil
 }
 
 func executeBuild(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
@@ -264,40 +218,79 @@ func executeBuild(context *model.CommandArgs, args ...string) (*model.CommandRes
 		return util.SendEphemeralCommandResponse(fmt.Sprintf("Invalid head type. Please specify one of `%s` or `%s`", HeadTypeBranch, HeadTypeTag))
 	}
 
-	build, _, err := client.PipelineApi.TriggerPipeline(nil, vcsSlug + "/" + repo, &circleci2.PipelineApiTriggerPipelineOpts{
-		Body:                optional.NewInterface(body),
+	build, response, err := client.PipelineApi.TriggerPipeline(nil, vcsSlug+"/"+repo, &circleci2.PipelineApiTriggerPipelineOpts{
+		Body: optional.NewInterface(body),
 	})
+
 	if err != nil {
-		return util.SendEphemeralCommandResponse("Unable to connect to circleci. Make sure the auth token is still valid. Error: " + err.Error())
+		config.Mattermost.LogError(fmt.Sprintf(
+			"Failed to trigger build. VCS slug: %s, repo: %s, head type: %s, head: %s, error: %s, response: %v",
+			vcsSlug,
+			repo,
+			headType,
+			err.Error(),
+			response,
+		))
+
+		var message string
+
+		if response != nil && response.StatusCode == http.StatusNotFound {
+			message = fmt.Sprintf("Unable to trigger build. Either the specified workflow doesn't exist or the  auth token is not valid.")
+		} else {
+			message = fmt.Sprintf("Unable to trigger build.")
+		}
+
+		return util.SendEphemeralCommandResponse(message)
 	}
 
-	attachment := &model.SlackAttachment{
-		Color:   "#7FC1EE",
-		Pretext: fmt.Sprintf("CircleCI build %d initiated successfully.", build.Number),
-		Text:    fmt.Sprintf("CircleCI build [%d](%s) initiated successfully.", build.Number, "TODO URL"),
-		Fields: []*model.SlackAttachmentField{
-			{
-				Title: "User",
-				Value: build.Number,
-				Short: false,
-			},
-			//{
-			//	Title: "Account",
-			//	Value: build.Username,
-			//	Short: false,
-			//},
-			//{
-			//	Title: "Repo",
-			//	Value: build.Reponame,
-			//	Short: false,
-			//},
-			//{
-			//	Title: "Branch",
-			//	Value: build.Branch,
-			//	Short: false,
-			//},
-		},
+	workflows, response, err := client.PipelineApi.ListWorkflowsByPipelineId(nil, build.Id, nil)
+	if err != nil {
+		config.Mattermost.LogError(fmt.Sprintf(
+			"Failed to fetch pipeline details. Pipeline ID: %s, VCS slug: %s, repo: %s, head type: %s, head: %s, error: %s, response: %v",
+			build.Id,
+			vcsSlug,
+			repo,
+			headType,
+			err.Error(),
+			response,
+		))
+
+		return util.SendEphemeralCommandResponse("Successfully trigger build but failed to fetch triggered build's details. You  can still view the triggered build in CircleCI.")
 	}
+
+	attachmentFields := make([]*model.SlackAttachmentField, len(workflows.Items))
+
+	for i, workflow := range workflows.Items {
+		attachmentFields[i] = &model.SlackAttachmentField{
+			Short: false,
+			Title: "Workflow: " + strings.Title(workflow.Name),
+			Value: fmt.Sprintf("https://app.circleci.com/pipelines/%s/%d/workflows/%s", vcsSlug+"/"+repo, build.Number, workflow.Id),
+		}
+	}
+
+	attachmentFields = append(
+		attachmentFields,
+		&model.SlackAttachmentField{
+			Title: "Build Number",
+			Value: build.Number,
+			Short: true,
+		},
+		&model.SlackAttachmentField{
+			Title: "Build ID",
+			Value: build.Id,
+			Short: true,
+		},
+		&model.SlackAttachmentField{
+			Title: "State",
+			Value: build.State,
+			Short: true,
+		},
+	)
+
+	attachment := util.BaseSlackAttachment()
+	attachment.Pretext = fmt.Sprintf("CircleCI build %d initiated successfully.", build.Number)
+	attachment.Text = fmt.Sprintf("CircleCI build %d initiated successfully.", build.Number)
+	attachment.Fields = attachmentFields
 
 	return &model.CommandResponse{
 		Username:    config.BotDisplayName,
