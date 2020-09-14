@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/serializer"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/service"
 
