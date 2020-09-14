@@ -8,12 +8,12 @@ import (
 	"github.com/pkg/errors"
 )
 
-func SendWebhookNotifications(req serializer.CircleCIWebhookRequest) error {
+func SendWebhookNotifications(circleCIWebhook serializer.CircleCIWebhookRequest) error {
 	var post *model.Post
-	if req.Status == "failure" {
-		post = req.GenerateFailurePost()
-	} else if req.Status == "success" {
-		post = req.GenerateSuccessPost()
+	if circleCIWebhook.Status == "failure" {
+		post = circleCIWebhook.GenerateFailurePost()
+	} else if circleCIWebhook.Status == "success" {
+		post = circleCIWebhook.GenerateSuccessPost()
 	}
 
 	if post == nil {
@@ -23,15 +23,14 @@ func SendWebhookNotifications(req serializer.CircleCIWebhookRequest) error {
 
 	subscriptions, err := store.GetSubscriptions()
 	if err != nil {
-		config.Mattermost.LogError("failed to get the list of subscriptions", "Error", err.Error())
 		return err
 	}
-	channelIDs := subscriptions.GetChannelIDs(req.GetSubscription())
+	channelIDs := subscriptions.GetChannelIDs(circleCIWebhook.GetSubscription())
 
 	for _, channelID := range channelIDs {
 		post.ChannelId = channelID
 		if _, appErr := config.Mattermost.CreatePost(post); appErr != nil {
-			config.Mattermost.LogError(appErr.Error())
+			config.Mattermost.LogError("Failed to CircleCI status create the post in the channel.", "Error", appErr.Error(), "ChannelID", channelID)
 		}
 	}
 

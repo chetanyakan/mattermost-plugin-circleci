@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/serializer"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/store"
 )
@@ -34,23 +33,11 @@ func RemoveSubscription(subscription serializer.Subscription) error {
 	return nil
 }
 
-func getFormattedMessage(subscriptions []serializer.Subscription) string {
-	if len(subscriptions) == 0 {
-		return ""
-	}
-
-	message := "| VcsType | BaseURL | Organisation | Repository |\n| :-- | --: | :-- | :-- |\n"
-	for _, s := range subscriptions {
-		message += fmt.Sprintf("| %s | %s | %s | %s |\n", s.VCSType, s.BaseURL, s.OrgName, s.RepoName)
-	}
-	return message
-}
-
-func ListSubscriptions(channelID string) (string, error) {
+func ListSubscriptions(channelID string) ([]serializer.Subscription, error) {
 	subscriptions, err := store.GetSubscriptions()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return getFormattedMessage(subscriptions.List(channelID)), nil
+	return subscriptions.List(channelID), nil
 }
