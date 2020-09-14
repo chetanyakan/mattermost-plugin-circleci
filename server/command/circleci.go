@@ -62,6 +62,10 @@ func executeSubscribe(context *model.CommandArgs, args ...string) (*model.Comman
 		ChannelID: context.ChannelId,
 	}
 
+	if err := newSubscription.Validate(); err != nil {
+		return util.SendEphemeralCommandResponse(fmt.Sprintf("Failed to validate subscription details. Error: %v", err.Error()))
+	}
+
 	if err := service.AddSubscription(newSubscription); err != nil {
 		return util.SendEphemeralCommandResponse("Failed to add subscription. Please try again later. If the problem persists, contact your system administrator.")
 	}
