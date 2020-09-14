@@ -31,6 +31,7 @@ excluded_words:
   - thoas
   - TomTucka
   - antihax
+  - stretchr
   - unmarshal
   - Unmarshal
   - dataToUnmarshal
