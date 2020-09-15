@@ -43,6 +43,8 @@ func SaveSubscriptions(s *serializer.Subscriptions) error {
 }
 
 func GetVCS(alias string) (*serializer.VCS, error) {
+
+
 	key := vcsKeyPrefix + alias
 	data, err := config.Mattermost.KVGet(key)
 	if err != nil {
@@ -56,7 +58,7 @@ func GetVCS(alias string) (*serializer.VCS, error) {
 
 	var vcs *serializer.VCS
 	if err := json.Unmarshal(data, &vcs); err != nil {
-		config.Mattermost.LogError(fmt.Sprintf("Error occiurred unmarshaling VCS fetched from KV store. VCS alias: [%s], error: [%s]", alias, err.Error()))
+		config.Mattermost.LogError(fmt.Sprintf("Error occurred unmarshaling VCS fetched from KV store. VCS alias: [%s], error: [%s]", alias, err.Error()))
 		return nil, err
 	}
 

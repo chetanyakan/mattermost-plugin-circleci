@@ -378,7 +378,7 @@ func executeAddVCS(context *model.CommandArgs, args ...string) (*model.CommandRe
 
 	alias, baseURL := args[0], args[1]
 
-	existingVCS, err := store.GetVCS(alias)
+	existingVCS, err := service.GetVCS(alias)
 	if err != nil {
 		return util.SendEphemeralCommandResponse("Failed to check for existing VCS with same alias. Please try again later. If the problem persists, contact your system administrator.")
 	}
@@ -392,7 +392,7 @@ func executeAddVCS(context *model.CommandArgs, args ...string) (*model.CommandRe
 		BaseURL: baseURL,
 	}
 
-	if err := store.SaveVCS(vcs); err != nil {
+	if err := service.AddVCS(vcs); err != nil {
 		return util.SendEphemeralCommandResponse("Failed to save VCS. Please try again later. If the problem persists, contact your system administrator.")
 	}
 
@@ -414,7 +414,7 @@ func executeDeleteVCS(context *model.CommandArgs, args ...string) (*model.Comman
 
 	alias := args[0]
 
-	existingVCS, err := store.GetVCS(alias)
+	existingVCS, err := service.GetVCS(alias)
 	if err != nil {
 		return util.SendEphemeralCommandResponse("Failed to check VCS. Please try again later. If the problem persists, contact your system administrator.")
 	}
@@ -423,7 +423,7 @@ func executeDeleteVCS(context *model.CommandArgs, args ...string) (*model.Comman
 		return util.SendEphemeralCommandResponse("No VCS exists with provided alias.")
 	}
 
-	if err := store.DeleteVCS(alias); err != nil {
+	if err := service.DeleteVCS(alias); err != nil {
 		return util.SendEphemeralCommandResponse("Failed to delete VCS. Please try again later. If the problem persists, contact your system administrator.")
 	}
 
@@ -439,7 +439,7 @@ func executeDeleteVCS(context *model.CommandArgs, args ...string) (*model.Comman
 }
 
 func executeListVCS(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
-	vcsList, err := store.GetVCSList()
+	vcsList, err := service.GetVCSList()
 	if err != nil {
 		return util.SendEphemeralCommandResponse("Failed to fetch list of VCS. Please try again later. If the problem persists, contact your system administrator.")
 	}

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/serializer"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/store"
 )
@@ -30,4 +31,24 @@ func GetVCS(alias string) (*serializer.VCS, error) {
 	}
 
 	return vcs, nil
+}
+
+func AddVCS(vcs *serializer.VCS) error {
+	if _, exists := defaultVCSList[vcs.Alias]; exists {
+		return errors.New("VCS alias already exists")
+	}
+
+	return store.SaveVCS(vcs)
+}
+
+func DeleteVCS(alias string) error {
+	if _, exists := defaultVCSList[alias]; exists {
+		return errors.New("specified VCS is a system VCS and cannot be deleted")
+	}
+
+	return store.DeleteVCS(alias)
+}
+
+func GetVCSList() (*[]*serializer.VCS, error) {
+	return store.GetVCSList()
 }
