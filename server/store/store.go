@@ -87,14 +87,14 @@ func SaveVCS(vcs *serializer.VCS) error {
 
 }
 
-func GetVCSList() (*[]*serializer.VCS, error) {
+func GetVCSList() ([]*serializer.VCS, error) {
 	data, appErr := config.Mattermost.KVGet(listVCSKey)
 	if appErr != nil {
 		config.Mattermost.LogError("Failed to fetch list of VCS from KV store. Error: " + appErr.Error())
 		return nil, errors.New(appErr.Error())
 	}
 
-	var vcsList *[]*serializer.VCS
+	var vcsList []*serializer.VCS
 	if err := json.Unmarshal(data, &vcsList); err != nil {
 		config.Mattermost.LogError(fmt.Sprintf("Failed to unmarshal VCS list. Error: %s", err.Error()))
 		return nil, err

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/serializer"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/service"
-	"github.com/chetanyakan/mattermost-plugin-circleci/server/store"
 	"github.com/mattermost/mattermost-server/v5/utils"
 
 	circleci2 "github.com/TomTucka/go-circleci/circleci"
@@ -445,7 +444,7 @@ func executeListVCS(context *model.CommandArgs, args ...string) (*model.CommandR
 	}
 
 	message := "Available VCS -\n\n| No.  | Alias  | Base URL |\n|:------------|:------------|:------------|\n"
-	for i, vcs := range *vcsList {
+	for i, vcs := range vcsList {
 		message += fmt.Sprintf("|%d|%s|%s|\n", i+1, vcs.Alias, vcs.BaseURL)
 	}
 

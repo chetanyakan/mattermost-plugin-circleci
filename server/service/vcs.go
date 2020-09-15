@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	defaultVCSList = map[string]serializer.VCS{
+	defaultVCSList = map[string]*serializer.VCS{
 		"github": {
 			Alias:   serializer.VCSTypeGithub,
 			BaseURL: "https://github.com",
@@ -22,7 +22,7 @@ var (
 func GetVCS(alias string) (*serializer.VCS, error) {
 	// first we check for default VCS, then in custom VCS
 	if vcs, found := defaultVCSList[alias]; found {
-		return &vcs, nil
+		return vcs, nil
 	}
 
 	vcs, err := store.GetVCS(alias)
@@ -49,6 +49,15 @@ func DeleteVCS(alias string) error {
 	return store.DeleteVCS(alias)
 }
 
-func GetVCSList() (*[]*serializer.VCS, error) {
-	return store.GetVCSList()
+func GetVCSList() ([]*serializer.VCS, error) {
+	vcsList, error := store.GetVCSList()
+	if error != nil {
+		return nil, error
+	}
+
+	for _, systemVCS := range defaultVCSList {
+		vcsList = append(vcsList, systemVCS)
+	}
+
+	return vcsList, nil
 }
