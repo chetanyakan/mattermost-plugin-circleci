@@ -44,7 +44,6 @@ func SaveSubscriptions(s *serializer.Subscriptions) error {
 
 func GetVCS(alias string) (*serializer.VCS, error) {
 
-
 	key := vcsKeyPrefix + alias
 	data, err := config.Mattermost.KVGet(key)
 	if err != nil {
