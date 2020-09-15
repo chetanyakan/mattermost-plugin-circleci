@@ -2,10 +2,13 @@ package command
 
 import (
 	"fmt"
+	"github.com/chetanyakan/mattermost-plugin-circleci/server/serializer"
+	"github.com/chetanyakan/mattermost-plugin-circleci/server/service"
+	"github.com/mattermost/mattermost-server/v5/utils"
+
 	circleci2 "github.com/TomTucka/go-circleci/circleci"
 	"github.com/antihax/optional"
-	"github.com/mattermost/mattermost-server/model"
-	"github.com/mattermost/mattermost-server/utils"
+	"github.com/mattermost/mattermost-server/v5/model"
 	"net/http"
 	"strings"
 	"time"
@@ -32,17 +35,81 @@ var CircleCICommandHandler = Handler{
 		IconURL:          config.BotIconURL,
 	},
 	handlers: map[string]HandlerFunc{
-		"connect":       executeConnect,
-		"disconnect":    executeDisconnect,
-		"build":         executeBuild,
-		"recent/builds": executeListRecentBuilds,
+		"connect":            executeConnect,
+		"disconnect":         executeDisconnect,
+		"subscribe":          executeSubscribe,
+		"unsubscribe":        executeUnsubscribe,
+		"list/subscriptions": executeListSubscriptions,
+		"build":              executeBuild,
+		"recent/builds":      executeListRecentBuilds,
+		"add/vcs":            executeAddVCS,
+		"delete/vcs":         executeDeleteVCS,
+		"list/vcs":           executeListVCS,
 	},
 	defaultHandler: func(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
 		return util.SendEphemeralCommandResponse(invalidCommand)
 	},
 }
 
-func executeConnect(ctx *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+func executeSubscribe(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+	if len(args) != 3 {
+		return util.SendEphemeralCommandResponse("Invalid number of arguments. syntax: `/circleci subscribe [vcs-alias] [org-name] [repo-name]`")
+	}
+
+	vcs, err := service.GetVCS(args[0])
+	if err != nil {
+		return util.SendEphemeralCommandResponse(err.Error())
+	}
+
+	newSubscription := serializer.Subscription{
+		VCSType:   vcs.Alias,
+		BaseURL:   vcs.BaseURL,
+		OrgName:   args[1],
+		RepoName:  args[2],
+		ChannelID: context.ChannelId,
+	}
+
+	if err := service.AddSubscription(newSubscription); err != nil {
+		return util.SendEphemeralCommandResponse("Failed to add subscription. Please try again later. If the problem persists, contact your system administrator.")
+	}
+
+	return util.SendEphemeralCommandResponse("Subscription added successfully.")
+}
+
+func executeUnsubscribe(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+	if len(args) != 3 {
+		return util.SendEphemeralCommandResponse("Invalid number of arguments. syntax: `/circleci unsubscribe [vcs-alias] [org-name] [repo-name]`")
+	}
+
+	vcs, err := service.GetVCS(args[0])
+	if err != nil {
+		return util.SendEphemeralCommandResponse(err.Error())
+	}
+
+	subscription := serializer.Subscription{
+		VCSType:   vcs.Alias,
+		BaseURL:   vcs.BaseURL,
+		OrgName:   args[1],
+		RepoName:  args[2],
+		ChannelID: context.ChannelId,
+	}
+
+	if err := service.RemoveSubscription(subscription); err != nil {
+		return util.SendEphemeralCommandResponse("Failed to remove subscription. Please try again later. If the problem persists, contact your system administrator.")
+	}
+
+	return util.SendEphemeralCommandResponse("Subscription removed successfully.")
+}
+
+func executeListSubscriptions(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+	message, err := service.ListSubscriptions(context.ChannelId)
+	if err != nil {
+		return util.SendEphemeralCommandResponse("Unable to fetch the list of subscriptions. Please use `/circleci subscribe` to create a subscription.")
+	}
+	return util.SendEphemeralCommandResponse(message)
+}
+
+func executeConnect(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
 	// we need the auth token
 	if len(args) < 1 {
 		return util.SendEphemeralCommandResponse("Please specify the auth token.")
@@ -52,7 +119,7 @@ func executeConnect(ctx *model.CommandArgs, args ...string) (*model.CommandRespo
 	conf := circleci2.NewConfiguration()
 	conf.AddDefaultHeader("Circle-Token", authToken)
 
-	if err := config.Mattermost.KVSet(ctx.UserId+"_auth_token", []byte(authToken)); err != nil {
+	if err := config.Mattermost.KVSet(context.UserId+"_auth_token", []byte(authToken)); err != nil {
 		config.Mattermost.LogError("Unable to save auth token to KVStore. Error: " + err.Error())
 		return nil, err
 	}
@@ -96,7 +163,7 @@ func executeListRecentBuilds(context *model.CommandArgs, args ...string) (*model
 	workflowCache := map[string]circleci2.Workflow{}
 	pipelineCache := map[string]circleci2.Pipeline{}
 	userCache := map[string]circleci2.User{}
-	//attachments := []*model.SlackAttachment{}
+
 	attachment := util.BaseSlackAttachment()
 
 	for _, build := range builds.Items[:10] {
@@ -300,4 +367,92 @@ func executeBuild(context *model.CommandArgs, args ...string) (*model.CommandRes
 		Type:        model.COMMAND_RESPONSE_TYPE_IN_CHANNEL,
 		Attachments: []*model.SlackAttachment{attachment},
 	}, nil
+}
+
+func executeAddVCS(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+	config.Mattermost.LogInfo(fmt.Sprintf("%v", args))
+	if len(args) < 2 {
+		return util.SendEphemeralCommandResponse("Invalid number of arguments. Use this command as `/cirecleci add vcs [alias] [base URL]`")
+	}
+
+	alias, baseURL := args[0], args[1]
+
+	existingVCS, err := service.GetVCS(alias)
+	if err != nil {
+		return util.SendEphemeralCommandResponse("Failed to check for existing VCS with same alias. Please try again later. If the problem persists, contact your system administrator.")
+	}
+
+	if existingVCS != nil {
+		return util.SendEphemeralCommandResponse(fmt.Sprintf("Another VCS existis with the same alias. Please delete existing VCS first if you want to update it. Alias: `%s`, base URL: `%s`", existingVCS.Alias, existingVCS.BaseURL))
+	}
+
+	vcs := &serializer.VCS{
+		Alias:   alias,
+		BaseURL: baseURL,
+	}
+
+	if err := service.AddVCS(vcs); err != nil {
+		return util.SendEphemeralCommandResponse("Failed to save VCS. Please try again later. If the problem persists, contact your system administrator.")
+	}
+
+	message := fmt.Sprintf("Successfully added VCS with alias `%s` and base URL `%s`", vcs.Alias, vcs.BaseURL)
+
+	_, _ = config.Mattermost.CreatePost(&model.Post{
+		UserId:    config.BotUserID,
+		ChannelId: context.ChannelId,
+		Message:   message,
+	})
+
+	return &model.CommandResponse{}, nil
+}
+
+func executeDeleteVCS(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+	if len(args) < 1 {
+		return util.SendEphemeralCommandResponse("Invalid number of arguments. Use this command as `/cirecleci delete vcs [alias]`")
+	}
+
+	alias := args[0]
+
+	existingVCS, err := service.GetVCS(alias)
+	if err != nil {
+		return util.SendEphemeralCommandResponse("Failed to check VCS. Please try again later. If the problem persists, contact your system administrator.")
+	}
+
+	if existingVCS == nil {
+		return util.SendEphemeralCommandResponse("No VCS exists with provided alias.")
+	}
+
+	if err := service.DeleteVCS(alias); err != nil {
+		return util.SendEphemeralCommandResponse("Failed to delete VCS. Please try again later. If the problem persists, contact your system administrator.")
+	}
+
+	message := fmt.Sprintf("Successfully deleted VCS with alias `%s`", alias)
+
+	_, _ = config.Mattermost.CreatePost(&model.Post{
+		UserId:    config.BotUserID,
+		ChannelId: context.ChannelId,
+		Message:   message,
+	})
+
+	return &model.CommandResponse{}, nil
+}
+
+func executeListVCS(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+	vcsList, err := service.GetVCSList()
+	if err != nil {
+		return util.SendEphemeralCommandResponse("Failed to fetch list of VCS. Please try again later. If the problem persists, contact your system administrator.")
+	}
+
+	message := "Available VCS -\n\n| No.  | Alias  | Base URL |\n|:------------|:------------|:------------|\n"
+	for i, vcs := range vcsList {
+		message += fmt.Sprintf("|%d|%s|%s|\n", i+1, vcs.Alias, vcs.BaseURL)
+	}
+
+	_, _ = config.Mattermost.CreatePost(&model.Post{
+		UserId:    config.BotUserID,
+		ChannelId: context.ChannelId,
+		Message:   message,
+	})
+
+	return &model.CommandResponse{}, nil
 }

@@ -2,9 +2,8 @@ package controller
 
 import (
 	"encoding/json"
+	"github.com/chetanyakan/mattermost-plugin-circleci/server/service"
 	"net/http"
-
-	"github.com/mattermost/mattermost-server/model"
 
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/config"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/serializer"
@@ -26,17 +25,9 @@ func handleCircleCIBuildFinished(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var post *model.Post
-	if cwReq.Status == "failure" {
-		post = cwReq.GenerateFailurePost()
-	} else if cwReq.Status == "success" {
-		post = cwReq.GenerateSuccessPost()
-	}
-
-	if post != nil {
-		if _, appErr := config.Mattermost.CreatePost(post); appErr != nil {
-			config.Mattermost.LogError(appErr.Error())
-		}
+	if err := service.SendWebhookNotifications(cwReq); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	returnStatusOK(w)

@@ -3,7 +3,7 @@ package serializer
 import (
 	"fmt"
 
-	"github.com/mattermost/mattermost-server/model"
+	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/config"
 )
@@ -21,7 +21,6 @@ var texts = map[string]string{
 }
 
 type CircleCIWebhookRequest struct {
-	ChannelID   string `json:"channel_id"`
 	Status      string `json:"status"`
 	BuildNum    string `json:"build_num"`
 	RepoName    string `json:"repo_name"`
@@ -29,12 +28,24 @@ type CircleCIWebhookRequest struct {
 	Commit      string `json:"commit"`
 	BuildURL    string `json:"build_url"`
 	CompareURL  string `json:"compare_url"`
+	VCSType     string `json:"vcs_type"`
+	VCSBaseURL  string `json:"vcs_base_url"`
 	OrgName     string `json:"org_name"`
 	Branch      string `json:"branch"`
 	Username    string `json:"username"`
 	PullRequest string `json:"pull_request"` // TODO: multiple PRs
 	Job         string `json:"job"`
 	WorkflowID  string `json:"workflow_id"`
+}
+
+func (r *CircleCIWebhookRequest) GetSubscription() Subscription {
+	s := Subscription{
+		VCSType:  r.VCSType,
+		BaseURL:  r.VCSBaseURL,
+		OrgName:  r.OrgName,
+		RepoName: r.RepoName,
+	}
+	return s
 }
 
 func (r *CircleCIWebhookRequest) getSlackAttachmentFields() []*model.SlackAttachmentField {
@@ -93,14 +104,14 @@ func (r *CircleCIWebhookRequest) GenerateFailurePost() *model.Post {
 		Color:    "#d10c20",
 		Title:    fmt.Sprintf("Oops. Build [%s](%s) failed.", r.BuildNum, r.BuildURL),
 		Fields:   r.getSlackAttachmentFields(),
-		ThumbURL: "/plugins/" + config.PluginName + "/static/icon_failed.png",
+		ThumbURL: config.WorkflowFailedIconURL,
 	}
 
 	post := &model.Post{
-		UserId:    config.BotUserID,
-		ChannelId: r.ChannelID,
+		UserId: config.BotUserID,
 	}
 
+	post.AddProp("override_icon_url", config.BotIconURLFailed)
 	model.ParseSlackAttachment(post, []*model.SlackAttachment{attachment})
 	return post
 }
@@ -114,14 +125,14 @@ func (r *CircleCIWebhookRequest) GenerateSuccessPost() *model.Post {
 		Color:    "#41aa58",
 		Title:    fmt.Sprintf("Build [%s](%s) passed.", r.BuildNum, r.BuildURL),
 		Fields:   r.getSlackAttachmentFields(),
-		ThumbURL: "/plugins/" + config.PluginName + "/static/icon_success.png",
+		ThumbURL: config.WorkflowSuccessIconURL,
 	}
 
 	post := &model.Post{
-		UserId:    config.BotUserID,
-		ChannelId: r.ChannelID,
+		UserId: config.BotUserID,
 	}
 
+	post.AddProp("override_icon_url", config.BotIconURLSuccess)
 	model.ParseSlackAttachment(post, []*model.SlackAttachment{attachment})
 	return post
 }

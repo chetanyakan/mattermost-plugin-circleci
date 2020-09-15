@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/mattermost/mattermost-server/plugin"
+	"github.com/mattermost/mattermost-server/v5/plugin"
 	"go.uber.org/atomic"
 )
 
@@ -19,8 +19,14 @@ const (
 	BotUserName    = "circleci"
 	BotDisplayName = "CircleCI"
 	BotDescription = "Created by the CircleCI Plugin."
-	BotIconURL     = URLStaticBase + "/circleci.png"
-	BotThumbnail   = URLStaticBase + "/circleci-blue.png"
+
+	BotIconURL        = URLStaticBase + "/circleci.png"
+	BotThumbnail      = URLStaticBase + "/circleci-blue.png"
+	BotIconURLSuccess = URLStaticBase + "/circleci_success.png"
+	BotIconURLFailed  = URLStaticBase + "/circeci_failed.png"
+
+	WorkflowSuccessIconURL = URLStaticBase + "/icon_success.png"
+	WorkflowFailedIconURL  = URLStaticBase + "/icon_failed.png"
 )
 
 var (
