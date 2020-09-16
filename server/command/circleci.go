@@ -32,11 +32,9 @@ var commandConnect = &command{
 	Execute: executeConnect,
 	AutocompleteData: &model.AutocompleteData{
 		Trigger:  "connect",
-		Hint:     "Connect with CircleCI account",
 		HelpText: "Connect with CircleCI account",
 		Arguments: []*model.AutocompleteArg{
 			{
-				Name:     "Auth Token",
 				HelpText: "CircleCI Auth Token",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
@@ -65,7 +63,6 @@ var commandSubscribe = &command{
 		HelpText: "Subscribe to specified CircleCI notifications in the current channel",
 		Arguments: []*model.AutocompleteArg{
 			{
-				Name:     "VCS Alias",
 				HelpText: "VCS Alias",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
@@ -75,7 +72,6 @@ var commandSubscribe = &command{
 				},
 			},
 			{
-				Name:     "Org Name",
 				HelpText: "Org Name",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
@@ -85,7 +81,6 @@ var commandSubscribe = &command{
 				},
 			},
 			{
-				Name:     "Repository Name",
 				HelpText: "Repository Name",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
@@ -106,7 +101,6 @@ var commandUnsubscribe = &command{
 		HelpText: "Unsubscribe to specified CircleCI notifications in the current channel",
 		Arguments: []*model.AutocompleteArg{
 			{
-				Name:     "VCS Alias",
 				HelpText: "VCS Alias",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
@@ -116,7 +110,6 @@ var commandUnsubscribe = &command{
 				},
 			},
 			{
-				Name:     "Org Name",
 				HelpText: "Org Name",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
@@ -126,7 +119,6 @@ var commandUnsubscribe = &command{
 				},
 			},
 			{
-				Name:     "Repository Name",
 				HelpText: "Repository Name",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
@@ -157,7 +149,6 @@ var commandBuild = &command{
 		HelpText: "Trigger the specified build.",
 		Arguments: []*model.AutocompleteArg{
 			{
-				Name:     "VCS Alias",
 				HelpText: "VCS Alias",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
@@ -167,7 +158,6 @@ var commandBuild = &command{
 				},
 			},
 			{
-				Name:     "Org Name",
 				HelpText: "Org Name",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
@@ -177,7 +167,6 @@ var commandBuild = &command{
 				},
 			},
 			{
-				Name:     "Repository Name",
 				HelpText: "Repository Name",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
@@ -187,7 +176,6 @@ var commandBuild = &command{
 				},
 			},
 			{
-				Name:     "Head Type",
 				HelpText: "Head Type",
 				Type:     model.AutocompleteArgTypeStaticList,
 				Required: true,
@@ -205,7 +193,6 @@ var commandBuild = &command{
 				},
 			},
 			{
-				Name:     "Head",
 				HelpText: "Head to build against",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
@@ -226,7 +213,6 @@ var commandRecentBuilds = &command{
 		HelpText: "List recent builds of specified pipeline",
 		Arguments: []*model.AutocompleteArg{
 			{
-				Name:     "VCS Alias",
 				HelpText: "VCS Alias",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
@@ -236,7 +222,6 @@ var commandRecentBuilds = &command{
 				},
 			},
 			{
-				Name:     "Org Name",
 				HelpText: "Org Name",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
@@ -246,7 +231,6 @@ var commandRecentBuilds = &command{
 				},
 			},
 			{
-				Name:     "Repository Name",
 				HelpText: "Repository Name",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
@@ -256,7 +240,6 @@ var commandRecentBuilds = &command{
 				},
 			},
 			{
-				Name:     "Workflow",
 				HelpText: "Workflow name to list recent builds of",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
@@ -277,7 +260,6 @@ var commandAddVCS = &command{
 		HelpText: "Add new VCS alias",
 		Arguments: []*model.AutocompleteArg{
 			{
-				Name:     "VCS Alias",
 				HelpText: "VCS Alias",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
@@ -287,7 +269,6 @@ var commandAddVCS = &command{
 				},
 			},
 			{
-				Name:     "VCS Base URL",
 				HelpText: "Base URL of the VCS. This is the URL you see in CircleCI when viewing a build. For example - `github` is the base URL in `https://app.circleci.com/pipelines/github/foobar`",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
@@ -298,6 +279,34 @@ var commandAddVCS = &command{
 			},
 		},
 		SubCommands: nil,
+	},
+}
+
+var commandDeleteVCS = &command{
+	Execute: executeAddVCS,
+	AutocompleteData: &model.AutocompleteData{
+		Trigger:  "delete vcs",
+		HelpText: "Delete an existing VCS alias",
+		Arguments: []*model.AutocompleteArg{
+			{
+				HelpText: "VCS Alias",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "Name to be used as VCS alias",
+					Pattern: ".+",
+				},
+			},
+		},
+		SubCommands: nil,
+	},
+}
+
+var commandListVCS = &command{
+	Execute: executeAddVCS,
+	AutocompleteData: &model.AutocompleteData{
+		Trigger:  "list vcs",
+		HelpText: "List all available VCS.",
 	},
 }
 
@@ -323,6 +332,8 @@ var CircleCICommandHandler = Handler{
 				commandBuild.AutocompleteData,
 				commandRecentBuilds.AutocompleteData,
 				commandAddVCS.AutocompleteData,
+				commandDeleteVCS.AutocompleteData,
+				commandListVCS.AutocompleteData,
 			},
 		},
 	},
