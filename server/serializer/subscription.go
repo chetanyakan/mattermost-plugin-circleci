@@ -23,6 +23,7 @@ func (s *Subscription) Validate() error {
 		return errors.New("vcs type is invalid")
 	}
 
+	// Ignore this validation if base url is not provided
 	if strings.TrimSpace(s.BaseURL) != "" {
 		if _, err := url.Parse(s.BaseURL); err != nil {
 			return errors.Wrap(err, "base url is invalid")

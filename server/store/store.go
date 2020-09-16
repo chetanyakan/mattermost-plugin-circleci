@@ -3,6 +3,8 @@ package store
 import (
 	"encoding/json"
 
+	"github.com/pkg/errors"
+
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/config"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/serializer"
 )
@@ -20,7 +22,7 @@ func GetSubscriptions() (*serializer.Subscriptions, error) {
 	b, err := config.Mattermost.KVGet(subscriptionsKey)
 	if err != nil {
 		config.Mattermost.LogError("failed to get the list of subscriptions", "Error", err.Error())
-		return nil, err
+		return nil, errors.New(err.Error())
 	}
 
 	s := serializer.Subscriptions{}
@@ -31,11 +33,11 @@ func GetSubscriptions() (*serializer.Subscriptions, error) {
 	return &s, nil
 }
 
-func SaveSubscriptions(s *serializer.Subscriptions) error {
-	// TODO: Check if we should use KVCompareAndSet to prevent race conditions
-	if err := config.Mattermost.KVSet(subscriptionsKey, getBytes(s)); err != nil {
+func SaveSubscriptions(originalSubscriptions, newSubscriptions *serializer.Subscriptions) (bool, error) {
+	success, err := config.Mattermost.KVCompareAndSet(subscriptionsKey, getBytes(originalSubscriptions), getBytes(newSubscriptions))
+	if err != nil {
 		config.Mattermost.LogError("failed to save the list of subscriptions in KVStore", "Error", err.Error())
-		return err
+		return success, errors.New(err.Error())
 	}
-	return nil
+	return success, nil
 }
