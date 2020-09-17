@@ -2,6 +2,7 @@ package util
 
 import (
 	"errors"
+
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/config"
 )
 

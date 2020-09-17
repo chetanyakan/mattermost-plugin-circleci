@@ -42,7 +42,6 @@ func SplitArgs(s string) ([]string, error) {
 		} else {
 			args = append(args, s[start:end])
 		}
-
 	}
 
 	cleanedArgs := make([]string, len(args))

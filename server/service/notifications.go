@@ -1,11 +1,12 @@
 package service
 
 import (
+	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/pkg/errors"
+
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/config"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/serializer"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/store"
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/pkg/errors"
 )
 
 func SendWebhookNotifications(req serializer.CircleCIWebhookRequest) error {

@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/serializer"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/store"
 )

@@ -65,9 +65,6 @@ jspm_packages/
 # next.js build output
 .next
 
-# IDE generated files
-.idea
-
 # Plugin generated files
 dist
 plugin.exe
@@ -76,3 +73,6 @@ plugin.exe
 vendor/
 .history/
 coverage.txt
+
+# webapp test cases
+webapp/build/test-results.xml
