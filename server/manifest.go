@@ -20,7 +20,7 @@ const manifestStr = `
   "release_notes_url": "https://github.com/chetanyakan/mattermost-plugin-circleci/releases/tag/v0.1.0",
   "icon_path": "assets/icon.svg",
   "version": "0.1.0",
-  "min_server_version": "5.26.0",
+  "min_server_version": "5.20.0",
   "server": {
     "executables": {
       "linux-amd64": "server/dist/plugin-linux-amd64",
