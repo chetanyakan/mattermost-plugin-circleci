@@ -24,6 +24,7 @@ func getBytes(s interface{}) []byte {
 func GetSubscriptions() (*serializer.Subscriptions, error) {
 	b, err := config.Mattermost.KVGet(subscriptionsKey)
 	if err != nil {
+		config.Mattermost.LogError("failed to get the list of subscriptions", "Error", err.Error())
 		return nil, err
 	}
 
@@ -38,6 +39,7 @@ func GetSubscriptions() (*serializer.Subscriptions, error) {
 func SaveSubscriptions(s *serializer.Subscriptions) error {
 	// TODO: Check if we should use KVCompareAndSet to prevent race conditions
 	if err := config.Mattermost.KVSet(subscriptionsKey, getBytes(s)); err != nil {
+		config.Mattermost.LogError("failed to save the list of subscriptions in KVStore", "Error", err.Error())
 		return err
 	}
 	return nil
@@ -145,14 +147,14 @@ func addToVCSList(vcs serializer.VCS) error {
 	err := util.KVCompareAndSet(listVCSKey, vcsListData, updatedVCSListData, func(oldData []byte) ([]byte, error) {
 		var oldList []serializer.VCS
 		if err := json.Unmarshal(oldData, &oldList); err != nil {
-			config.Mattermost.LogError("Failed to unmarshal VCS list. Error: " + err.Error())
+			config.Mattermost.LogError("Failed to unmarshal VCS list.", "Error", err.Error())
 			return nil, err
 		}
 
 		vcsList := append(oldList, vcs)
 		newList, err := json.Marshal(vcsList)
 		if err != nil {
-			config.Mattermost.LogError("Failed to marshal updated VCS list. Error: " + err.Error())
+			config.Mattermost.LogError("Failed to marshal updated VCS list.", "Error", err.Error())
 			return nil, err
 		}
 

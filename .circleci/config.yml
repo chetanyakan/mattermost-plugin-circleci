@@ -6,11 +6,14 @@ jobs:
     working_directory: /go/src/github.com/chetanyakan/mattermost-plugin-circleci
     steps:
       - checkout
+
       - restore_cache:
+          name: Restore go modules cache
           key: go-mod-v1-{{ checksum "go.sum" }}
       - restore_cache:
           name: Restore golangci-lint cache
           keys: [ 'v1-golangci-lint-{{ arch }}-1.31.0' ]
+
       - run:
           name: Install golangci-lint
           command: |
@@ -26,6 +29,7 @@ jobs:
           TERM: dumb
 
       - save_cache:
+          name: Save go modules cache
           key: go-mod-v1-{{ checksum "go.sum" }}
           paths:
             - "/go/pkg/mod"
@@ -37,10 +41,12 @@ jobs:
       - store_artifacts:
           path: ./dist
           destination: build
+
       - persist_to_workspace:
           root: .
           paths:
             - dist
+
       - run:
           name: Notification Fail
           when: on_fail

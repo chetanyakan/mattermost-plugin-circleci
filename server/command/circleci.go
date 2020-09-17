@@ -70,6 +70,10 @@ func executeSubscribe(context *model.CommandArgs, args ...string) (*model.Comman
 		ChannelID: context.ChannelId,
 	}
 
+	if err := newSubscription.Validate(); err != nil {
+		return util.SendEphemeralCommandResponse(fmt.Sprintf("Failed to validate subscription details. Error: %v", err.Error()))
+	}
+
 	if err := service.AddSubscription(newSubscription); err != nil {
 		return util.SendEphemeralCommandResponse("Failed to add subscription. Please try again later. If the problem persists, contact your system administrator.")
 	}
@@ -103,10 +107,20 @@ func executeUnsubscribe(context *model.CommandArgs, args ...string) (*model.Comm
 }
 
 func executeListSubscriptions(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
-	message, err := service.ListSubscriptions(context.ChannelId)
+	subscriptions, err := service.ListSubscriptions(context.ChannelId)
 	if err != nil {
 		return util.SendEphemeralCommandResponse("Unable to fetch the list of subscriptions. Please use `/circleci subscribe` to create a subscription.")
 	}
+
+	if len(subscriptions) == 0 {
+		return util.SendEphemeralCommandResponse("You have no notifications subscribed to this channel.\nUse `/circleci subscribe` to create a subscription.")
+	}
+
+	message := "| VcsType | BaseURL | Organization | Repository |\n| :-- | --: | :-- | :-- |\n"
+	for _, s := range subscriptions {
+		message += fmt.Sprintf("| %s | %s | %s | %s |\n", s.VCSType, s.BaseURL, s.OrgName, s.RepoName)
+	}
+
 	return util.SendEphemeralCommandResponse(message)
 }
 

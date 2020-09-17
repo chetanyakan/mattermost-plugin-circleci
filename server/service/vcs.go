@@ -51,9 +51,9 @@ func DeleteVCS(alias string) error {
 }
 
 func GetVCSList() ([]*serializer.VCS, error) {
-	vcsList, error := store.GetVCSList()
-	if error != nil {
-		return nil, error
+	vcsList, err := store.GetVCSList()
+	if err != nil {
+		return nil, err
 	}
 
 	for _, systemVCS := range defaultVCSList {

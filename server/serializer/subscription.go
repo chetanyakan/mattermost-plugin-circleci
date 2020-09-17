@@ -20,18 +20,18 @@ type Subscription struct {
 // Validate checks if the subscription has valid fields
 // returns an error if the subscription is invalid and nil if valid
 func (s *Subscription) Validate() error {
-	if s.BaseURL != "" {
+	if strings.TrimSpace(s.BaseURL) != "" {
 		if _, err := url.Parse(s.BaseURL); err != nil {
 			return errors.Wrap(err, "base url is invalid")
 		}
 	}
 
-	if s.OrgName == "" {
-		return errors.New("org name is empty")
+	if strings.TrimSpace(s.OrgName) == "" {
+		return errors.New("org name cannot be empty")
 	}
 
-	if s.RepoName == "" {
-		return errors.New("repo name is empty")
+	if strings.TrimSpace(s.RepoName) == "" {
+		return errors.New("repo name cannot be empty")
 	}
 
 	return nil
