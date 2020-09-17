@@ -103,15 +103,15 @@ ifneq ($(wildcard $(ASSETS_DIR)/.),)
 	cp -r $(ASSETS_DIR) dist/$(PLUGIN_ID)/
 endif
 ifneq ($(HAS_PUBLIC),)
-	cp -r public/ dist/$(PLUGIN_ID)/
+	cp -r public dist/$(PLUGIN_ID)/
 endif
 ifneq ($(HAS_SERVER),)
-	mkdir -p dist/$(PLUGIN_ID)/server/dist;
-	cp -r server/dist/* dist/$(PLUGIN_ID)/server/dist/;
+	mkdir -p dist/$(PLUGIN_ID)/server
+	cp -r server/dist dist/$(PLUGIN_ID)/server/
 endif
 ifneq ($(HAS_WEBAPP),)
-	mkdir -p dist/$(PLUGIN_ID)/webapp/dist;
-	cp -r webapp/dist/* dist/$(PLUGIN_ID)/webapp/dist/;
+	mkdir -p dist/$(PLUGIN_ID)/webapp
+	cp -r webapp/dist dist/$(PLUGIN_ID)/webapp/
 endif
 	cd dist && tar -cvzf $(BUNDLE_NAME) $(PLUGIN_ID)
 
@@ -248,6 +248,15 @@ ifneq ($(HAS_WEBAPP),)
 	rm -fr webapp/node_modules
 endif
 	rm -fr build/bin/
+
+## Sync directory with a starter template
+sync:
+ifndef STARTERTEMPLATE_PATH
+	@echo STARTERTEMPLATE_PATH is not set.
+	@echo Set STARTERTEMPLATE_PATH to a local clone of https://github.com/mattermost/mattermost-plugin-starter-template and retry.
+	@exit 1
+endif
+	cd ${STARTERTEMPLATE_PATH} && go run ./build/sync/main.go ./build/sync/plan.yml $(PWD)
 
 # Help documentation à la https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 help:
