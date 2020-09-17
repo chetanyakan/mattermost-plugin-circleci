@@ -8,15 +8,32 @@ jobs:
       - checkout
       - restore_cache:
           key: go-mod-v1-{{ checksum "go.sum" }}
+      - restore_cache:
+          name: Restore golangci-lint cache
+          keys: [ 'v1-golangci-lint-{{ arch }}-1.31.0' ]
+      - run:
+          name: Install golangci-lint
+          command: |
+            mkdir -p /go/bin
+            command -v /go/bin/golangci-lint && exit
+            download=https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh
+            wget -O- -q $download | sh -s -- -b /go/bin/ v1.31.0
+
       - type: shell
         name: 'Checks the code style, tests, builds and bundles the plugin.'
         command: make all
         environment:
           TERM: dumb
+
       - save_cache:
           key: go-mod-v1-{{ checksum "go.sum" }}
           paths:
             - "/go/pkg/mod"
+      - save_cache:
+          name: Save golangci-lint cache
+          key: 'v1-golangci-lint-{{ arch }}-1.31.0'
+          paths: [ /go/bin/golangci-lint ]
+
       - store_artifacts:
           path: ./dist
           destination: build
