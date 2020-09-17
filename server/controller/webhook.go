@@ -2,11 +2,11 @@ package controller
 
 import (
 	"encoding/json"
-	"github.com/chetanyakan/mattermost-plugin-circleci/server/service"
 	"net/http"
 
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/config"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/serializer"
+	"github.com/chetanyakan/mattermost-plugin-circleci/server/service"
 )
 
 var circleCIBuildFinished = &Endpoint{

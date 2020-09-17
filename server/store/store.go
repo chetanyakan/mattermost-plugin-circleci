@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/config"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/serializer"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/util"
@@ -43,7 +44,6 @@ func SaveSubscriptions(s *serializer.Subscriptions) error {
 }
 
 func GetVCS(alias string) (*serializer.VCS, error) {
-
 	key := vcsKeyPrefix + alias
 	data, err := config.Mattermost.KVGet(key)
 	if err != nil {
@@ -83,7 +83,6 @@ func SaveVCS(vcs *serializer.VCS) error {
 	}
 
 	return nil
-
 }
 
 func GetVCSList() ([]*serializer.VCS, error) {
@@ -137,13 +136,13 @@ func addToVCSList(vcs serializer.VCS) error {
 
 	*vcsList = append(*vcsList, vcs)
 
-	updatedVCSListData, err := json.Marshal(*vcsList)
-	if err != nil {
-		config.Mattermost.LogError("Failed to marshal updated VCS list. Error: " + err.Error())
-		return err
+	updatedVCSListData, vcsListErr := json.Marshal(*vcsList)
+	if vcsListErr != nil {
+		config.Mattermost.LogError("Failed to marshal updated VCS list. Error: " + vcsListErr.Error())
+		return vcsListErr
 	}
 
-	err = util.KVCompareAndSet(listVCSKey, vcsListData, updatedVCSListData, func(oldData []byte) ([]byte, error) {
+	err := util.KVCompareAndSet(listVCSKey, vcsListData, updatedVCSListData, func(oldData []byte) ([]byte, error) {
 		var oldList []serializer.VCS
 		if err := json.Unmarshal(oldData, &oldList); err != nil {
 			config.Mattermost.LogError("Failed to unmarshal VCS list. Error: " + err.Error())

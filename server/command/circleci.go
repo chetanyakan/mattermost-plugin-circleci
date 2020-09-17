@@ -1,19 +1,20 @@
 package command
 
 import (
+	"context"
 	"fmt"
-	"github.com/chetanyakan/mattermost-plugin-circleci/server/serializer"
-	"github.com/chetanyakan/mattermost-plugin-circleci/server/service"
-	"github.com/mattermost/mattermost-server/v5/utils"
-
-	circleci2 "github.com/TomTucka/go-circleci/circleci"
-	"github.com/antihax/optional"
-	"github.com/mattermost/mattermost-server/v5/model"
 	"net/http"
 	"strings"
 	"time"
 
+	circleci2 "github.com/TomTucka/go-circleci/circleci"
+	"github.com/antihax/optional"
+	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v5/utils"
+
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/config"
+	"github.com/chetanyakan/mattermost-plugin-circleci/server/serializer"
+	"github.com/chetanyakan/mattermost-plugin-circleci/server/service"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/util"
 )
 
@@ -124,7 +125,7 @@ func executeConnect(context *model.CommandArgs, args ...string) (*model.CommandR
 		return nil, err
 	}
 
-	return util.SendEphemeralCommandResponse(fmt.Sprintf("Successfully saved auth token."))
+	return util.SendEphemeralCommandResponse("Successfully saved auth token.")
 }
 
 func executeDisconnect(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
@@ -144,8 +145,8 @@ func executeDisconnect(context *model.CommandArgs, args ...string) (*model.Comma
 	return util.SendEphemeralCommandResponse("Successfully disconnected.")
 }
 
-func executeListRecentBuilds(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
-	authToken, appErr := config.Mattermost.KVGet(context.UserId + "_auth_token")
+func executeListRecentBuilds(ctx *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+	authToken, appErr := config.Mattermost.KVGet(ctx.UserId + "_auth_token")
 	if appErr != nil {
 		return nil, appErr
 	}
@@ -155,9 +156,12 @@ func executeListRecentBuilds(context *model.CommandArgs, args ...string) (*model
 	client := util.GetCircleciClient(string(authToken))
 
 	vcs, repo, workflow := args[0], args[1], args[2]
-	builds, _, err := client.InsightsApi.GetProjectWorkflowRuns(nil, vcs+"/"+repo, workflow, utils.Yesterday(), utils.Yesterday().Add(2*24*time.Hour), nil)
+	builds, resp, err := client.InsightsApi.GetProjectWorkflowRuns(context.TODO(), vcs+"/"+repo, workflow, utils.Yesterday(), utils.Yesterday().Add(2*24*time.Hour), nil)
 	if err != nil {
 		return util.SendEphemeralCommandResponse("Unable to connect to circleci. Make sure the auth token is still valid. Error: " + err.Error())
+	}
+	if resp != nil {
+		defer resp.Body.Close()
 	}
 
 	workflowCache := map[string]circleci2.Workflow{}
@@ -172,10 +176,13 @@ func executeListRecentBuilds(context *model.CommandArgs, args ...string) (*model
 		if _, exists := workflowCache[build.Id]; exists {
 			workflow = workflowCache[build.Id]
 		} else {
-			workflow, _, err = client.WorkflowApi.GetWorkflowById(nil, build.Id)
+			workflow, resp, err = client.WorkflowApi.GetWorkflowById(context.TODO(), build.Id)
 			if err != nil {
 				config.Mattermost.LogError("Unable to fetch workflow for ID: " + build.Id + ". Error: " + err.Error())
 				return util.SendEphemeralCommandResponse("Unable to fetch data from CircleCI. Please try again.")
+			}
+			if resp != nil {
+				defer resp.Body.Close()
 			}
 		}
 
@@ -184,10 +191,13 @@ func executeListRecentBuilds(context *model.CommandArgs, args ...string) (*model
 		if _, exists := pipelineCache[workflow.PipelineId]; exists {
 			pipeline = pipelineCache[workflow.PipelineId]
 		} else {
-			pipeline, _, err = client.PipelineApi.GetPipelineById(nil, workflow.PipelineId)
+			pipeline, resp, err = client.PipelineApi.GetPipelineById(context.TODO(), workflow.PipelineId)
 			if err != nil {
 				config.Mattermost.LogError("Unable to fetch pipeline for ID: " + workflow.PipelineId + ". Error: " + err.Error())
 				return util.SendEphemeralCommandResponse("Unable to fetch data from CircleCI. Please try again.")
+			}
+			if resp != nil {
+				defer resp.Body.Close()
 			}
 		}
 
@@ -196,10 +206,13 @@ func executeListRecentBuilds(context *model.CommandArgs, args ...string) (*model
 		if _, exists := userCache[workflow.StartedBy]; exists {
 			triggeredBy = userCache[workflow.StartedBy]
 		} else {
-			triggeredBy, _, err = client.UserApi.GetUser(nil, workflow.StartedBy)
+			triggeredBy, resp, err = client.UserApi.GetUser(context.TODO(), workflow.StartedBy)
 			if err != nil {
 				config.Mattermost.LogError("Unable to fetch user for ID: " + workflow.StartedBy + ". Error: " + err.Error())
 				return util.SendEphemeralCommandResponse("Unable to fetch data from CircleCI. Please try again.")
+			}
+			if resp != nil {
+				defer resp.Body.Close()
 			}
 		}
 
@@ -244,20 +257,20 @@ func executeListRecentBuilds(context *model.CommandArgs, args ...string) (*model
 
 	post := &model.Post{
 		UserId:    config.BotUserID,
-		ChannelId: context.ChannelId,
+		ChannelId: ctx.ChannelId,
 	}
 
 	model.ParseSlackAttachment(post, []*model.SlackAttachment{attachment})
 	if _, err := config.Mattermost.CreatePost(post); err != nil {
-		config.Mattermost.LogError(fmt.Sprintf("Failed to create post for triggered workflow. ChannelID: %s, error: %s", context.ChannelId, err.Error()))
+		config.Mattermost.LogError(fmt.Sprintf("Failed to create post for triggered workflow. ChannelID: %s, error: %s", ctx.ChannelId, err.Error()))
 		return util.SendEphemeralCommandResponse("Failed to create post for triggered workflow. The build has been triggered though. You can view it in CircleCI.")
 	}
 
 	return &model.CommandResponse{}, nil
 }
 
-func executeBuild(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
-	authToken, appErr := config.Mattermost.KVGet(context.UserId + "_auth_token")
+func executeBuild(ctx *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+	authToken, appErr := config.Mattermost.KVGet(ctx.UserId + "_auth_token")
 	if appErr != nil {
 		return nil, appErr
 	}
@@ -285,7 +298,7 @@ func executeBuild(context *model.CommandArgs, args ...string) (*model.CommandRes
 		return util.SendEphemeralCommandResponse(fmt.Sprintf("Invalid head type. Please specify one of `%s` or `%s`", HeadTypeBranch, HeadTypeTag))
 	}
 
-	build, response, err := client.PipelineApi.TriggerPipeline(nil, vcsSlug+"/"+repo, &circleci2.PipelineApiTriggerPipelineOpts{
+	build, response, err := client.PipelineApi.TriggerPipeline(context.TODO(), vcsSlug+"/"+repo, &circleci2.PipelineApiTriggerPipelineOpts{
 		Body: optional.NewInterface(body),
 	})
 
@@ -303,15 +316,18 @@ func executeBuild(context *model.CommandArgs, args ...string) (*model.CommandRes
 		var message string
 
 		if response != nil && response.StatusCode == http.StatusNotFound {
-			message = fmt.Sprintf("Unable to trigger build. Either the specified workflow doesn't exist or the  auth token is not valid.")
+			message = "Unable to trigger build. Either the specified workflow doesn't exist or the  auth token is not valid."
 		} else {
-			message = fmt.Sprintf("Unable to trigger build.")
+			message = "Unable to trigger build."
 		}
 
 		return util.SendEphemeralCommandResponse(message)
 	}
+	if response != nil {
+		defer response.Body.Close()
+	}
 
-	workflows, response, err := client.PipelineApi.ListWorkflowsByPipelineId(nil, build.Id, nil)
+	workflows, response, err := client.PipelineApi.ListWorkflowsByPipelineId(context.TODO(), build.Id, nil)
 	if err != nil {
 		config.Mattermost.LogError(fmt.Sprintf(
 			"Failed to fetch pipeline details. Pipeline ID: %s, VCS slug: %s, repo: %s, head type: %s, head: %s, error: %s, response: %v",
@@ -325,6 +341,9 @@ func executeBuild(context *model.CommandArgs, args ...string) (*model.CommandRes
 		))
 
 		return util.SendEphemeralCommandResponse("Successfully trigger build but failed to fetch triggered build's details. You  can still view the triggered build in CircleCI.")
+	}
+	if response != nil {
+		defer response.Body.Close()
 	}
 
 	attachmentFields := make([]*model.SlackAttachmentField, len(workflows.Items))

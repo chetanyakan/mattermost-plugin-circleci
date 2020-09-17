@@ -4,8 +4,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/chetanyakan/mattermost-plugin-circleci/server/util"
 	"github.com/pkg/errors"
+
+	"github.com/chetanyakan/mattermost-plugin-circleci/server/util"
 )
 
 type Subscription struct {

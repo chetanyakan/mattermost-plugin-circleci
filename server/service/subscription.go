@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/serializer"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/store"
 )
@@ -39,7 +40,7 @@ func getFormattedMessage(subscriptions []serializer.Subscription) string {
 		return ""
 	}
 
-	message := "| VcsType | BaseURL | Organisation | Repository |\n| :-- | --: | :-- | :-- |\n"
+	message := "| VcsType | BaseURL | Owner | Repository |\n| :-- | --: | :-- | :-- |\n"
 	for _, s := range subscriptions {
 		message += fmt.Sprintf("| %s | %s | %s | %s |\n", s.VCSType, s.BaseURL, s.OrgName, s.RepoName)
 	}
