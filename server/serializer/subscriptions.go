@@ -1,8 +1,6 @@
 package serializer
 
-import (
-	funk "github.com/thoas/go-funk"
-)
+import "github.com/thoas/go-funk"
 
 type StringSubscription map[string]Subscription
 

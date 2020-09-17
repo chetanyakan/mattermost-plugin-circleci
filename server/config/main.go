@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/mattermost/mattermost-server/plugin"
+	"github.com/mattermost/mattermost-server/v5/plugin"
 	"go.uber.org/atomic"
 )
 
@@ -21,6 +21,7 @@ const (
 	BotDescription = "Created by the CircleCI Plugin."
 
 	BotIconURL        = URLStaticBase + "/circleci.png"
+	BotThumbnail      = URLStaticBase + "/circleci-blue.png"
 	BotIconURLSuccess = URLStaticBase + "/circleci_success.png"
 	BotIconURLFailed  = URLStaticBase + "/circeci_failed.png"
 

@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/mattermost/mattermost-server/model"
+	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/pkg/errors"
 
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/config"
@@ -42,7 +42,6 @@ func SplitArgs(s string) ([]string, error) {
 		} else {
 			args = append(args, s[start:end])
 		}
-
 	}
 
 	cleanedArgs := make([]string, len(args))

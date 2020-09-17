@@ -1,27 +1,64 @@
 package service
 
 import (
+	"errors"
+
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/serializer"
-	"github.com/pkg/errors"
+	"github.com/chetanyakan/mattermost-plugin-circleci/server/store"
 )
 
 var (
-	vcsList = map[string]serializer.VCS{
+	defaultVCSList = map[string]*serializer.VCS{
 		"github": {
-			Type:    serializer.VCSTypeGithub,
+			Alias:   serializer.VCSTypeGithub,
 			BaseURL: "https://github.com",
 		},
 		"bitbucket": {
-			Type:    serializer.VCSTypeBitbucket,
+			Alias:   serializer.VCSTypeBitbucket,
 			BaseURL: "https://bitbucket.org",
 		},
 	}
 )
 
 func GetVCS(alias string) (*serializer.VCS, error) {
-	vcs, found := vcsList[alias]
-	if !found {
-		return nil, errors.New("invalid vcs alias. vcs not found. use `github` or `bitbucket`")
+	// first we check for default VCS, then in custom VCS
+	if vcs, found := defaultVCSList[alias]; found {
+		return vcs, nil
 	}
-	return &vcs, nil
+
+	vcs, err := store.GetVCS(alias)
+	if err != nil {
+		return nil, err
+	}
+
+	return vcs, nil
+}
+
+func AddVCS(vcs *serializer.VCS) error {
+	if _, exists := defaultVCSList[vcs.Alias]; exists {
+		return errors.New("VCS alias already exists")
+	}
+
+	return store.SaveVCS(vcs)
+}
+
+func DeleteVCS(alias string) error {
+	if _, exists := defaultVCSList[alias]; exists {
+		return errors.New("specified VCS is a system VCS and cannot be deleted")
+	}
+
+	return store.DeleteVCS(alias)
+}
+
+func GetVCSList() ([]*serializer.VCS, error) {
+	vcsList, err := store.GetVCSList()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, systemVCS := range defaultVCSList {
+		vcsList = append(vcsList, systemVCS)
+	}
+
+	return vcsList, nil
 }

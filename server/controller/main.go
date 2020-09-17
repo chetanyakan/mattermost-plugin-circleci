@@ -1,16 +1,14 @@
 package controller
 
 import (
-	"crypto/subtle"
 	"net/http"
-	"net/url"
 	"path/filepath"
+
+	"github.com/gorilla/mux"
+	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/config"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/util"
-	"github.com/gorilla/mux"
-	"github.com/mattermost/mattermost-server/model"
-	"github.com/pkg/errors"
 )
 
 type Endpoint struct {
@@ -80,24 +78,8 @@ func Authenticated(w http.ResponseWriter, r *http.Request) bool {
 }
 
 func returnStatusOK(w http.ResponseWriter) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Alias", "application/json")
 	m := make(map[string]string)
 	m[model.STATUS] = model.STATUS_OK
 	_, _ = w.Write([]byte(model.MapToJson(m)))
-}
-
-func verifyHTTPSecret(expected, got string) (status int, err error) {
-	for {
-		if subtle.ConstantTimeCompare([]byte(got), []byte(expected)) == 1 {
-			break
-		}
-
-		unescaped, _ := url.QueryUnescape(got)
-		if unescaped == got {
-			return http.StatusForbidden, errors.New("Request URL: secret did not match")
-		}
-		got = unescaped
-	}
-
-	return 0, nil
 }

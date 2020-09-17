@@ -5,14 +5,7 @@ const (
 	VCSTypeBitbucket = "bitbucket"
 )
 
-var (
-	validVCSTypes = map[string]bool{
-		VCSTypeGithub:    true,
-		VCSTypeBitbucket: true,
-	}
-)
-
 type VCS struct {
-	Type    string `json:"type"`
+	Alias   string `json:"alias"`
 	BaseURL string `json:"base_url"`
 }

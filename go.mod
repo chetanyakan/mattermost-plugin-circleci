@@ -3,12 +3,12 @@ module github.com/chetanyakan/mattermost-plugin-circleci
 go 1.13
 
 require (
-	github.com/gorilla/mux v1.7.3
+	github.com/TomTucka/go-circleci v1.1.0
+	github.com/antihax/optional v1.0.0
+	github.com/gorilla/mux v1.7.4
 	github.com/jinzhu/copier v0.0.0-20190924061706-b57f9002281a
-	github.com/jszwedko/go-circleci v0.3.0
-	github.com/mattermost/mattermost-server v1.4.1-0.20191016162522-6597fdb40134 // Mattermost Server 5.16.0
-	github.com/pkg/errors v0.8.1
+	github.com/mattermost/mattermost-server/v5 v5.26.2
+	github.com/pkg/errors v0.9.1
 	github.com/thoas/go-funk v0.7.0
-	go.uber.org/atomic v1.4.0
-	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550 // indirect
+	go.uber.org/atomic v1.6.0
 )

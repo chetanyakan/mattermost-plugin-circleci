@@ -10,14 +10,14 @@ import (
 )
 
 const (
-    // TODO: Configurable retry count
+	// TODO: Configurable retry count
 	kvStoreMaxRetryLimit = 3
 )
 
 func AddSubscription(newSubscription serializer.Subscription) error {
 	for i := 0; i < kvStoreMaxRetryLimit; i++ {
-		subscriptionsList, err := store.GetSubscriptions()
-		if err != nil {
+		subscriptionsList, getSubscriptionsErr := store.GetSubscriptions()
+		if getSubscriptionsErr != nil {
 			// Get subscriptions failed. Try to create the first subscription
 			subscriptionsList = nil
 		}
@@ -39,15 +39,15 @@ func AddSubscription(newSubscription serializer.Subscription) error {
 		}
 	}
 
-	return errors.New("Failed to add a subscription. Max retry limit reached.")
+	return errors.New("failed to add a subscription: max retry limit reached")
 }
 
 func RemoveSubscription(subscription serializer.Subscription) error {
 	for i := 0; i < kvStoreMaxRetryLimit; i++ {
-		subscriptionsList, err := store.GetSubscriptions()
-		if err != nil {
+		subscriptionsList, getSubscriptionsErr := store.GetSubscriptions()
+		if getSubscriptionsErr != nil {
 			// Cannot remove subscription if it does not already exist
-			return err
+			return getSubscriptionsErr
 		}
 
 		newSubscriptionsList := serializer.NewSubscriptions()
@@ -67,7 +67,7 @@ func RemoveSubscription(subscription serializer.Subscription) error {
 		}
 	}
 
-	return errors.New("Failed to add a subscription. Max retry limit reached.")
+	return errors.New("failed to add a subscription: max retry limit reached")
 }
 
 func ListSubscriptions(channelID string) ([]serializer.Subscription, error) {

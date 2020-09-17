@@ -4,8 +4,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/chetanyakan/mattermost-plugin-circleci/server/util"
 	"github.com/pkg/errors"
+
+	"github.com/chetanyakan/mattermost-plugin-circleci/server/util"
 )
 
 type Subscription struct {
@@ -19,10 +20,6 @@ type Subscription struct {
 // Validate checks if the subscription has valid fields
 // returns an error if the subscription is invalid and nil if valid
 func (s *Subscription) Validate() error {
-	if _, valid := validVCSTypes[s.VCSType]; !valid {
-		return errors.New("vcs type is invalid")
-	}
-
 	// Ignore this validation if base url is not provided
 	if strings.TrimSpace(s.BaseURL) != "" {
 		if _, err := url.Parse(s.BaseURL); err != nil {
