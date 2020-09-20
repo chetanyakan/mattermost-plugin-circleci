@@ -1,8 +1,6 @@
 package serializer
 
-import (
-	funk "github.com/thoas/go-funk"
-)
+import "github.com/thoas/go-funk"
 
 type StringSubscription map[string]Subscription
 
@@ -19,41 +17,41 @@ func NewSubscriptions() *Subscriptions {
 }
 
 // Add adds a new subscription to the list of all subscriptions
-func (l *Subscriptions) Add(s Subscription) {
+func (list *Subscriptions) Add(s Subscription) {
 	key := s.GetKey()
-	if _, contains := l.ByKey[key]; !contains {
-		l.ByKey[key] = make([]string, 0)
+	if _, contains := list.ByKey[key]; !contains {
+		list.ByKey[key] = make([]string, 0)
 	}
 
-	if !funk.Contains(l.ByKey[key], s.ChannelID) {
-		l.ByKey[key] = append(l.ByKey[key], s.ChannelID)
+	if !funk.Contains(list.ByKey[key], s.ChannelID) {
+		list.ByKey[key] = append(list.ByKey[key], s.ChannelID)
 	}
 
-	if _, found := l.ByChannelID[s.ChannelID]; !found {
-		l.ByChannelID[s.ChannelID] = make(StringSubscription)
+	if _, found := list.ByChannelID[s.ChannelID]; !found {
+		list.ByChannelID[s.ChannelID] = make(StringSubscription)
 	}
 
-	l.ByChannelID[s.ChannelID][key] = s
+	list.ByChannelID[s.ChannelID][key] = s
 }
 
 // Remove removes a subscription from the list of all subscriptions
-func (l *Subscriptions) Remove(s Subscription) {
+func (list *Subscriptions) Remove(s Subscription) {
 	key := s.GetKey()
-	delete(l.ByChannelID[s.ChannelID], key)
-	l.ByKey[key] = funk.FilterString(l.ByKey[key], func(el string) bool {
+	delete(list.ByChannelID[s.ChannelID], key)
+	list.ByKey[key] = funk.FilterString(list.ByKey[key], func(el string) bool {
 		return el == s.ChannelID
 	})
 }
 
 // GetChannelID returns the channelID to which the message for a subscription should be posted to
-func (l *Subscriptions) GetChannelIDs(s Subscription) []string {
-	return l.ByKey[s.GetKey()]
+func (list *Subscriptions) GetChannelIDs(s Subscription) []string {
+	return list.ByKey[s.GetKey()]
 }
 
 // List returns the list for a particular channel as a formatted mattermost message
-func (l *Subscriptions) List(channelID string) []Subscription {
-	values := make([]Subscription, 0, len(l.ByChannelID[channelID]))
-	for _, v := range l.ByChannelID[channelID] {
+func (list *Subscriptions) List(channelID string) []Subscription {
+	values := make([]Subscription, 0, len(list.ByChannelID[channelID]))
+	for _, v := range list.ByChannelID[channelID] {
 		values = append(values, v)
 	}
 

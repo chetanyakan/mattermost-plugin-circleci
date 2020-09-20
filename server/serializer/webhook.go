@@ -8,18 +8,6 @@ import (
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/config"
 )
 
-var colors = map[string]string{
-	"test":    "#AAAAAA",
-	"success": "#41aa58",
-	"failure": "#d10c20",
-}
-
-var texts = map[string]string{
-	"test":    "Hello from CircleCI.",
-	"success": "CircleCI build success.",
-	"failure": "CircleCI build failure.",
-}
-
 type CircleCIWebhookRequest struct {
 	Status      string `json:"status"`
 	BuildNum    string `json:"build_num"`
@@ -71,7 +59,7 @@ func (r *CircleCIWebhookRequest) getSlackAttachmentFields() []*model.SlackAttach
 			Short: true,
 		},
 		{
-			Title: "Organisation/User",
+			Title: "Owner",
 			Value: r.OrgName,
 			Short: true,
 		},

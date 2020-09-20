@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/serializer"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/store"
 )
@@ -50,9 +51,9 @@ func DeleteVCS(alias string) error {
 }
 
 func GetVCSList() ([]*serializer.VCS, error) {
-	vcsList, error := store.GetVCSList()
-	if error != nil {
-		return nil, error
+	vcsList, err := store.GetVCSList()
+	if err != nil {
+		return nil, err
 	}
 
 	for _, systemVCS := range defaultVCSList {

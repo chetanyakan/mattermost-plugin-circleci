@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/config"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/serializer"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/util"
@@ -23,6 +24,7 @@ func getBytes(s interface{}) []byte {
 func GetSubscriptions() (*serializer.Subscriptions, error) {
 	b, err := config.Mattermost.KVGet(subscriptionsKey)
 	if err != nil {
+		config.Mattermost.LogError("failed to get the list of subscriptions", "Error", err.Error())
 		return nil, err
 	}
 
@@ -37,13 +39,13 @@ func GetSubscriptions() (*serializer.Subscriptions, error) {
 func SaveSubscriptions(s *serializer.Subscriptions) error {
 	// TODO: Check if we should use KVCompareAndSet to prevent race conditions
 	if err := config.Mattermost.KVSet(subscriptionsKey, getBytes(s)); err != nil {
+		config.Mattermost.LogError("failed to save the list of subscriptions in KVStore", "Error", err.Error())
 		return err
 	}
 	return nil
 }
 
 func GetVCS(alias string) (*serializer.VCS, error) {
-
 	key := vcsKeyPrefix + alias
 	data, err := config.Mattermost.KVGet(key)
 	if err != nil {
@@ -83,7 +85,6 @@ func SaveVCS(vcs *serializer.VCS) error {
 	}
 
 	return nil
-
 }
 
 func GetVCSList() ([]*serializer.VCS, error) {
@@ -137,23 +138,23 @@ func addToVCSList(vcs serializer.VCS) error {
 
 	*vcsList = append(*vcsList, vcs)
 
-	updatedVCSListData, err := json.Marshal(*vcsList)
-	if err != nil {
-		config.Mattermost.LogError("Failed to marshal updated VCS list. Error: " + err.Error())
-		return err
+	updatedVCSListData, vcsListErr := json.Marshal(*vcsList)
+	if vcsListErr != nil {
+		config.Mattermost.LogError("Failed to marshal updated VCS list. Error: " + vcsListErr.Error())
+		return vcsListErr
 	}
 
-	err = util.KVCompareAndSet(listVCSKey, vcsListData, updatedVCSListData, func(oldData []byte) ([]byte, error) {
+	err := util.KVCompareAndSet(listVCSKey, vcsListData, updatedVCSListData, func(oldData []byte) ([]byte, error) {
 		var oldList []serializer.VCS
 		if err := json.Unmarshal(oldData, &oldList); err != nil {
-			config.Mattermost.LogError("Failed to unmarshal VCS list. Error: " + err.Error())
+			config.Mattermost.LogError("Failed to unmarshal VCS list.", "Error", err.Error())
 			return nil, err
 		}
 
 		vcsList := append(oldList, vcs)
 		newList, err := json.Marshal(vcsList)
 		if err != nil {
-			config.Mattermost.LogError("Failed to marshal updated VCS list. Error: " + err.Error())
+			config.Mattermost.LogError("Failed to marshal updated VCS list.", "Error", err.Error())
 			return nil, err
 		}
 
