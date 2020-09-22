@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"fmt"
+	"github.com/chetanyakan/mattermost-plugin-circleci/server/store"
 	"net/http"
 	"strings"
 	"time"
@@ -304,10 +305,30 @@ var commandDeleteVCS = &command{
 }
 
 var commandListVCS = &command{
-	Execute: executeAddVCS,
+	Execute: executeListVCS,
 	AutocompleteData: &model.AutocompleteData{
 		Trigger:  "list vcs",
 		HelpText: "List all available VCS.",
+	},
+}
+
+var commandProjectSummary = &command{
+	Execute: executeProjectSummary,
+	AutocompleteData: &model.AutocompleteData{
+		Trigger:  "project summary",
+		HelpText: "Show project summary",
+		Arguments: []*model.AutocompleteArg{
+			{
+				HelpText: "Project",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "VCS Alias. Use `/circle list projects` to view available projects",
+					Pattern: ".+",
+				},
+			},
+		},
+		SubCommands: nil,
 	},
 }
 
@@ -335,20 +356,22 @@ var CircleCICommandHandler = Handler{
 				commandAddVCS.AutocompleteData,
 				commandDeleteVCS.AutocompleteData,
 				commandListVCS.AutocompleteData,
+				commandProjectSummary.AutocompleteData,
 			},
 		},
 	},
 	handlers: map[string]HandlerFunc{
-		"connect":            executeConnect,
-		"disconnect":         executeDisconnect,
-		"subscribe":          executeSubscribe,
-		"unsubscribe":        executeUnsubscribe,
-		"list/subscriptions": executeListSubscriptions,
-		"build":              executeBuild,
-		"recent/builds":      executeListRecentBuilds,
-		"add/vcs":            executeAddVCS,
-		"delete/vcs":         executeDeleteVCS,
-		"list/vcs":           executeListVCS,
+		"connect":            commandConnect.Execute,
+		"disconnect":         commandDisconnect.Execute,
+		"subscribe":          commandSubscribe.Execute,
+		"unsubscribe":        commandUnsubscribe.Execute,
+		"list/subscriptions": commandListSubscriptions.Execute,
+		"build":              commandBuild.Execute,
+		"recent/builds":      commandRecentBuilds.Execute,
+		"add/vcs":            commandAddVCS.Execute,
+		"delete/vcs":         commandDeleteVCS.Execute,
+		"list/vcs":           commandListVCS.Execute,
+		"project/summary":    commandProjectSummary.Execute,
 	},
 	defaultHandler: func(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
 		return util.SendEphemeralCommandResponse(invalidCommand)
@@ -790,6 +813,144 @@ func executeListVCS(context *model.CommandArgs, args ...string) (*model.CommandR
 		ChannelId: context.ChannelId,
 		Message:   message,
 	})
+
+	return &model.CommandResponse{}, nil
+}
+
+func executeProjectSummary(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+	if len(args) < 1 {
+		return util.SendEphemeralCommandResponse("Incorrect syntax. Use this command as `/circleci project summary <project alias>`")
+	}
+
+	project, err := store.GetVCS(args[0])
+	if err != nil {
+		return util.SendEphemeralCommandResponse("Failed to fetch project data. Please try again later. If the problem persists, contact your system administrator.")
+	}
+
+	authToken, appErr := config.Mattermost.KVGet(context.UserId + "_auth_token")
+	if appErr != nil {
+		return nil, appErr
+	}
+	if string(authToken) == "" {
+		return util.SendEphemeralCommandResponse("Not connected. Please connect and try again later.")
+	}
+	client := util.GetCircleciClient(string(authToken))
+
+	insights, response, err := client.InsightsApi.GetProjectWorkflowMetrics(nil, project.BaseURL, nil)
+	if err != nil {
+		config.Mattermost.LogError(fmt.Sprintf(
+			"Failed to fetch project summary. Project slug: %s, error: %s",
+			args[1],
+			err.Error(),
+		))
+
+		return util.SendEphemeralCommandResponse(
+			"Failed to fetch project summary from CircleCI. Please try again later. If the problem persists, contact your system administrator.",
+		)
+	}
+
+	if response != nil {
+		defer response.Body.Close()
+	}
+
+	post := &model.Post{
+		UserId:    config.BotUserID,
+		ChannelId: context.ChannelId,
+	}
+
+	attachments := make([]*model.SlackAttachment, len(insights.Items))
+
+	for i, insight := range insights.Items {
+		attachment := util.BaseSlackAttachment()
+		attachment.Title = fmt.Sprintf(
+			"Project Summary: %s | %s | %s to %s",
+			project.Alias,
+			strings.Title(insight.Name),
+			insight.WindowStart.Format(time.UnixDate),
+			insight.WindowEnd.Format(time.UnixDate),
+		)
+		
+		config.Mattermost.LogInfo(fmt.Sprintf("%v", insight))
+
+		attachment.Fields = []*model.SlackAttachmentField{
+			{
+				Short: true,
+				Title: "Total Runs",
+				Value: insight.Metrics.TotalRuns,
+			},
+			{
+				Short: true,
+				Title: "Successful Runs",
+				Value: insight.Metrics.SuccessfulRuns,
+			},
+			{
+				Short: true,
+				Title: "Failed Runs",
+				Value: insight.Metrics.FailedRuns,
+			},
+			{
+				Short: true,
+				Title: "Success Rate",
+				Value: insight.Metrics.SuccessRate,
+			},
+			{
+				Short: true,
+				Title: "Throughput",
+				Value: insight.Metrics.Throughput,
+			},
+			{
+				Short: true,
+				Title: "MTTR",
+				Value: insight.Metrics.Mttr,
+			},
+			{
+				Short: true,
+				Title: "Total Credits Used",
+				Value: insight.Metrics.TotalCreditsUsed,
+			},
+			{
+				Short: true,
+				Title: "Duration: Min",
+				Value: insight.Metrics.DurationMetrics.Min,
+			},
+			{
+				Short: true,
+				Title: "Duration: Max",
+				Value: insight.Metrics.DurationMetrics.Max,
+			},
+			{
+				Short: true,
+				Title: "Duration: Median",
+				Value: insight.Metrics.DurationMetrics.Median,
+			},
+			{
+				Short: true,
+				Title: "Duration: Mean",
+				Value: insight.Metrics.DurationMetrics.Mean,
+			},
+			{
+				Short: true,
+				Title: "Duration: P95",
+				Value: insight.Metrics.DurationMetrics.P95,
+			},
+			{
+				Short: true,
+				Title: "Duration: Standard Deviation",
+				Value: insight.Metrics.DurationMetrics.StandardDeviation,
+			},
+		}
+		attachments[i] = attachment
+	}
+
+	model.ParseSlackAttachment(post, attachments)
+
+	_, appErr = config.Mattermost.CreatePost(post)
+	if appErr != nil {
+		config.Mattermost.LogError(fmt.Sprintf("Failed to create post for project summary. Project: %s, error: %s", args[1], appErr.Error()))
+		return util.SendEphemeralCommandResponse(
+			"Failed to create post for project summary. Please try again later. If the problem persists, contact your system administrator.",
+		)
+	}
 
 	return &model.CommandResponse{}, nil
 }
