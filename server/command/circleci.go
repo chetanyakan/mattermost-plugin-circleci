@@ -427,7 +427,7 @@ func executeListSubscriptions(context *model.CommandArgs, args ...string) (*mode
 	return util.SendEphemeralCommandResponse(message)
 }
 
-func executeConnect(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+func executeConnect(ctx *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
 	// we need the auth token
 	if len(args) < 1 {
 		return util.SendEphemeralCommandResponse("Please specify the auth token.")
@@ -437,7 +437,7 @@ func executeConnect(context *model.CommandArgs, args ...string) (*model.CommandR
 	conf := circleci2.NewConfiguration()
 	conf.AddDefaultHeader("Circle-Token", authToken)
 
-	if err := config.Mattermost.KVSet(context.UserId+"_auth_token", []byte(authToken)); err != nil {
+	if err := config.Mattermost.KVSet(ctx.UserId+"_auth_token", []byte(authToken)); err != nil {
 		config.Mattermost.LogError("Unable to save auth token to KVStore. Error: " + err.Error())
 		return nil, err
 	}
@@ -445,8 +445,8 @@ func executeConnect(context *model.CommandArgs, args ...string) (*model.CommandR
 	return util.SendEphemeralCommandResponse("Successfully saved auth token.")
 }
 
-func executeDisconnect(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
-	authToken, appErr := config.Mattermost.KVGet(context.UserId + "_auth_token")
+func executeDisconnect(ctx *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+	authToken, appErr := config.Mattermost.KVGet(ctx.UserId + "_auth_token")
 	if appErr != nil {
 		return nil, appErr
 	}
@@ -454,7 +454,7 @@ func executeDisconnect(context *model.CommandArgs, args ...string) (*model.Comma
 		return util.SendEphemeralCommandResponse("Not connected. Please connect and try again later.")
 	}
 
-	if err := config.Mattermost.KVDelete(context.UserId + "_auth_token"); err != nil {
+	if err := config.Mattermost.KVDelete(ctx.UserId + "_auth_token"); err != nil {
 		config.Mattermost.LogError("Unable to disconnect. Error: " + err.Error())
 		return nil, err
 	}
@@ -473,7 +473,7 @@ func executeListRecentBuilds(ctx *model.CommandArgs, args ...string) (*model.Com
 	client := util.GetCircleciClient(string(authToken))
 
 	vcs, org, repo, workflow := args[0], args[1], args[2], args[4]
-	builds, resp, err := client.InsightsApi.GetProjectWorkflowRuns(nil, vcs+"/"+org+"/"+repo, workflow, utils.Yesterday(), utils.Yesterday().Add(2*24*time.Hour), nil)
+	builds, resp, err := client.InsightsApi.GetProjectWorkflowRuns(context.TODO(), vcs+"/"+org+"/"+repo, workflow, utils.Yesterday(), utils.Yesterday().Add(2*24*time.Hour), nil)
 
 	if err != nil {
 		return util.SendEphemeralCommandResponse("Unable to connect to circleci. Make sure the auth token is still valid. Error: " + err.Error())
@@ -616,7 +616,7 @@ func executeBuild(ctx *model.CommandArgs, args ...string) (*model.CommandRespons
 		return util.SendEphemeralCommandResponse(fmt.Sprintf("Invalid head type. Please specify one of `%s` or `%s`", HeadTypeBranch, HeadTypeTag))
 	}
 
-	build, response, err := client.PipelineApi.TriggerPipeline(nil, vcsSlug+"/"+org+"/"+repo, &circleci2.PipelineApiTriggerPipelineOpts{
+	build, response, err := client.PipelineApi.TriggerPipeline(context.TODO(), vcsSlug+"/"+org+"/"+repo, &circleci2.PipelineApiTriggerPipelineOpts{
 		Body: optional.NewInterface(body),
 	})
 
