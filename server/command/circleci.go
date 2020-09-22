@@ -24,6 +24,293 @@ const (
 	HeadTypeTag    = "tag"
 )
 
+type command struct {
+	Execute          HandlerFunc
+	AutocompleteData *model.AutocompleteData
+}
+
+var commandConnect = &command{
+	Execute: executeConnect,
+	AutocompleteData: &model.AutocompleteData{
+		Trigger:  "connect",
+		HelpText: "Connect with CircleCI account",
+		Arguments: []*model.AutocompleteArg{
+			{
+				HelpText: "CircleCI Auth Token",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "CircleCI Auth Token",
+					Pattern: ".+",
+				},
+			},
+		},
+		SubCommands: nil,
+	},
+}
+
+var commandDisconnect = &command{
+	Execute: executeDisconnect,
+	AutocompleteData: &model.AutocompleteData{
+		Trigger:  "disconnect",
+		HelpText: "Disconnect your CircleCI account",
+	},
+}
+
+var commandSubscribe = &command{
+	Execute: executeSubscribe,
+	AutocompleteData: &model.AutocompleteData{
+		Trigger:  "subscribe",
+		HelpText: "Subscribe to specified CircleCI notifications in the current channel",
+		Arguments: []*model.AutocompleteArg{
+			{
+				HelpText: "VCS Alias",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "VCS Alias. Use `/circle list vcs` to view available VCS",
+					Pattern: ".+",
+				},
+			},
+			{
+				HelpText: "Org Name",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "Org name on the VCS. For example org name for `github.com/foo/bar` would be `foo`.",
+					Pattern: "._+",
+				},
+			},
+			{
+				HelpText: "Repository Name",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "Repository name on the VCS. For example repository name for `github.com/foo/bar` would be `bar`.",
+					Pattern: "._+",
+				},
+			},
+		},
+		SubCommands: nil,
+	},
+}
+
+var commandUnsubscribe = &command{
+	Execute: executeUnsubscribe,
+	AutocompleteData: &model.AutocompleteData{
+		Trigger:  "unsubscribe",
+		HelpText: "Unsubscribe to specified CircleCI notifications in the current channel",
+		Arguments: []*model.AutocompleteArg{
+			{
+				HelpText: "VCS Alias",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "VCS Alias. Use `/circle list vcs` to view available VCS",
+					Pattern: ".+",
+				},
+			},
+			{
+				HelpText: "Org Name",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "Org name on the VCS. For example org name for `github.com/foo/bar` would be `foo`.",
+					Pattern: "._+",
+				},
+			},
+			{
+				HelpText: "Repository Name",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "Repository name on the VCS. For example repository name for `github.com/foo/bar` would be `bar`.",
+					Pattern: "._+",
+				},
+			},
+		},
+		SubCommands: nil,
+	},
+}
+
+var commandListSubscriptions = &command{
+	Execute: executeListSubscriptions,
+	AutocompleteData: &model.AutocompleteData{
+		Trigger:     "list subscriptions",
+		HelpText:    "Get list of CircleCI notifications subscribed in the current channel",
+		Arguments:   nil,
+		SubCommands: nil,
+	},
+}
+
+var commandBuild = &command{
+	Execute: executeBuild,
+	AutocompleteData: &model.AutocompleteData{
+		Trigger:  "build",
+		HelpText: "Trigger the specified build.",
+		Arguments: []*model.AutocompleteArg{
+			{
+				HelpText: "VCS Alias",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "VCS Alias. Use `/circle list vcs` to view available VCS",
+					Pattern: ".+",
+				},
+			},
+			{
+				HelpText: "Org Name",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "Org name on the VCS. For example org name for `github.com/foo/bar` would be `foo`.",
+					Pattern: "._+",
+				},
+			},
+			{
+				HelpText: "Repository Name",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "Repository name on the VCS. For example repository name for `github.com/foo/bar` would be `bar`.",
+					Pattern: "._+",
+				},
+			},
+			{
+				HelpText: "Head Type",
+				Type:     model.AutocompleteArgTypeStaticList,
+				Required: true,
+				Data: &model.AutocompleteStaticListArg{
+					PossibleArguments: []model.AutocompleteListItem{
+						{
+							Item:     "branch",
+							HelpText: "Build against a branch",
+						},
+						{
+							Item:     "tag",
+							HelpText: "Build against a tag",
+						},
+					},
+				},
+			},
+			{
+				HelpText: "Head to build against",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "Branch or tag name to build against.",
+					Pattern: "._+",
+				},
+			},
+		},
+		SubCommands: nil,
+	},
+}
+
+var commandRecentBuilds = &command{
+	Execute: executeListRecentBuilds,
+	AutocompleteData: &model.AutocompleteData{
+		Trigger:  "recent builds",
+		HelpText: "List recent builds of specified pipeline",
+		Arguments: []*model.AutocompleteArg{
+			{
+				HelpText: "VCS Alias",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "VCS Alias. Use `/circle list vcs` to view available VCS",
+					Pattern: ".+",
+				},
+			},
+			{
+				HelpText: "Org Name",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "Org name on the VCS. For example org name for `github.com/foo/bar` would be `foo`.",
+					Pattern: "._+",
+				},
+			},
+			{
+				HelpText: "Repository Name",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "Repository name on the VCS. For example repository name for `github.com/foo/bar` would be `bar`.",
+					Pattern: "._+",
+				},
+			},
+			{
+				HelpText: "Workflow name to list recent builds of",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "Workflow name to list recent builds of. Example - `build`, `release`.",
+					Pattern: "._+",
+				},
+			},
+		},
+		SubCommands: nil,
+	},
+}
+
+var commandAddVCS = &command{
+	Execute: executeAddVCS,
+	AutocompleteData: &model.AutocompleteData{
+		Trigger:  "add vcs",
+		HelpText: "Add new VCS alias",
+		Arguments: []*model.AutocompleteArg{
+			{
+				HelpText: "VCS Alias",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "Name to be used as VCS alias",
+					Pattern: ".+",
+				},
+			},
+			{
+				HelpText: "Base URL of the VCS. This is the URL you see in CircleCI when viewing a build. For example - `github` is the base URL in `https://app.circleci.com/pipelines/github/foobar`",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "VCS base URL",
+					Pattern: "._+",
+				},
+			},
+		},
+		SubCommands: nil,
+	},
+}
+
+var commandDeleteVCS = &command{
+	Execute: executeAddVCS,
+	AutocompleteData: &model.AutocompleteData{
+		Trigger:  "delete vcs",
+		HelpText: "Delete an existing VCS alias",
+		Arguments: []*model.AutocompleteArg{
+			{
+				HelpText: "VCS Alias",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "Name to be used as VCS alias",
+					Pattern: ".+",
+				},
+			},
+		},
+		SubCommands: nil,
+	},
+}
+
+var commandListVCS = &command{
+	Execute: executeAddVCS,
+	AutocompleteData: &model.AutocompleteData{
+		Trigger:  "list vcs",
+		HelpText: "List all available VCS.",
+	},
+}
+
 var CircleCICommandHandler = Handler{
 	Command: &model.Command{
 		Trigger:          config.CommandPrefix,
@@ -34,6 +321,22 @@ var CircleCICommandHandler = Handler{
 		AutoCompleteHint: "[command]",
 		Username:         config.BotUserName,
 		IconURL:          config.BotIconURL,
+		AutocompleteData: &model.AutocompleteData{
+			Trigger:  "circleci",
+			HelpText: "interact with CircleCI right from with Mattermost",
+			SubCommands: []*model.AutocompleteData{
+				commandConnect.AutocompleteData,
+				commandDisconnect.AutocompleteData,
+				commandSubscribe.AutocompleteData,
+				commandUnsubscribe.AutocompleteData,
+				commandListSubscriptions.AutocompleteData,
+				commandBuild.AutocompleteData,
+				commandRecentBuilds.AutocompleteData,
+				commandAddVCS.AutocompleteData,
+				commandDeleteVCS.AutocompleteData,
+				commandListVCS.AutocompleteData,
+			},
+		},
 	},
 	handlers: map[string]HandlerFunc{
 		"connect":            executeConnect,
@@ -169,8 +472,9 @@ func executeListRecentBuilds(ctx *model.CommandArgs, args ...string) (*model.Com
 	}
 	client := util.GetCircleciClient(string(authToken))
 
-	vcs, repo, workflow := args[0], args[1], args[2]
-	builds, resp, err := client.InsightsApi.GetProjectWorkflowRuns(context.TODO(), vcs+"/"+repo, workflow, utils.Yesterday(), utils.Yesterday().Add(2*24*time.Hour), nil)
+	vcs, org, repo, workflow := args[0], args[1], args[2], args[4]
+	builds, resp, err := client.InsightsApi.GetProjectWorkflowRuns(nil, vcs+"/"+org+"/"+repo, workflow, utils.Yesterday(), utils.Yesterday().Add(2*24*time.Hour), nil)
+
 	if err != nil {
 		return util.SendEphemeralCommandResponse("Unable to connect to circleci. Make sure the auth token is still valid. Error: " + err.Error())
 	}
@@ -297,7 +601,7 @@ func executeBuild(ctx *model.CommandArgs, args ...string) (*model.CommandRespons
 		return util.SendEphemeralCommandResponse("Please specify the account, repo and branch names.")
 	}
 
-	vcsSlug, repo, headType, head := args[0], args[1], args[2], args[3]
+	vcsSlug, org, repo, headType, head := args[0], args[1], args[2], args[3], args[4]
 	client := util.GetCircleciClient(string(authToken))
 
 	// TODO need to add support for tag here
@@ -312,7 +616,7 @@ func executeBuild(ctx *model.CommandArgs, args ...string) (*model.CommandRespons
 		return util.SendEphemeralCommandResponse(fmt.Sprintf("Invalid head type. Please specify one of `%s` or `%s`", HeadTypeBranch, HeadTypeTag))
 	}
 
-	build, response, err := client.PipelineApi.TriggerPipeline(context.TODO(), vcsSlug+"/"+repo, &circleci2.PipelineApiTriggerPipelineOpts{
+	build, response, err := client.PipelineApi.TriggerPipeline(nil, vcsSlug+"/"+org+"/"+repo, &circleci2.PipelineApiTriggerPipelineOpts{
 		Body: optional.NewInterface(body),
 	})
 
