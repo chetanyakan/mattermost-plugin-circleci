@@ -26,7 +26,7 @@ const (
 
 var CircleCICommandHandler = Handler{
 	Command: &model.Command{
-		Trigger:          "circleci",
+		Trigger:          config.CommandPrefix,
 		Description:      "Integration with CircleCI.",
 		DisplayName:      "CircleCI",
 		AutoComplete:     true,

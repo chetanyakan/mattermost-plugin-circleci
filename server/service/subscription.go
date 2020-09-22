@@ -9,13 +9,8 @@ import (
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/store"
 )
 
-const (
-	// TODO: Configurable retry count
-	kvStoreMaxRetryLimit = 3
-)
-
 func AddSubscription(newSubscription serializer.Subscription) error {
-	for i := 0; i < kvStoreMaxRetryLimit; i++ {
+	for i := 0; i < config.KVCompareAndSetMaxRetries; i++ {
 		subscriptionsList, getSubscriptionsErr := store.GetSubscriptions()
 		if getSubscriptionsErr != nil {
 			// Get subscriptions failed. Try to create the first subscription
@@ -43,7 +38,7 @@ func AddSubscription(newSubscription serializer.Subscription) error {
 }
 
 func RemoveSubscription(subscription serializer.Subscription) error {
-	for i := 0; i < kvStoreMaxRetryLimit; i++ {
+	for i := 0; i < config.KVCompareAndSetMaxRetries; i++ {
 		subscriptionsList, getSubscriptionsErr := store.GetSubscriptions()
 		if getSubscriptionsErr != nil {
 			// Cannot remove subscription if it does not already exist
