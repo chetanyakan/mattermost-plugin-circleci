@@ -285,7 +285,7 @@ var commandAddVCS = &command{
 }
 
 var commandDeleteVCS = &command{
-	Execute: executeAddVCS,
+	Execute: executeDeleteVCS,
 	AutocompleteData: &model.AutocompleteData{
 		Trigger:  "delete vcs",
 		HelpText: "Delete an existing VCS alias",
@@ -332,6 +332,53 @@ var commandProjectSummary = &command{
 	},
 }
 
+var commandGetPipelineByNumber = &command{
+	Execute: executeGetPipelineByNumber,
+	AutocompleteData: &model.AutocompleteData{
+		Trigger:  "pipeline",
+		HelpText: "Get details of a pipeline.",
+		Arguments: []*model.AutocompleteArg{
+			{
+				HelpText: "VCS Alias",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "VCS Alias. Use `/circle list vcs` to view available VCS",
+					Pattern: ".+",
+				},
+			},
+			{
+				HelpText: "Org Name",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "Org name on the VCS. For example org name for `github.com/foo/bar` would be `foo`.",
+					Pattern: "._+",
+				},
+			},
+			{
+				HelpText: "Repository Name",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "Repository name on the VCS. For example repository name for `github.com/foo/bar` would be `bar`.",
+					Pattern: "._+",
+				},
+			},
+			{
+				HelpText: "Pipeline Number",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "Pipeline number",
+					Pattern: "._+",
+				},
+			},
+		},
+		SubCommands: nil,
+	},
+}
+
 var CircleCICommandHandler = Handler{
 	Command: &model.Command{
 		Trigger:          "circleci",
@@ -357,6 +404,7 @@ var CircleCICommandHandler = Handler{
 				commandDeleteVCS.AutocompleteData,
 				commandListVCS.AutocompleteData,
 				commandProjectSummary.AutocompleteData,
+				commandGetPipelineByNumber.AutocompleteData,
 			},
 		},
 	},
@@ -372,6 +420,7 @@ var CircleCICommandHandler = Handler{
 		"delete/vcs":         commandDeleteVCS.Execute,
 		"list/vcs":           commandListVCS.Execute,
 		"project/summary":    commandProjectSummary.Execute,
+		"pipeline":           commandGetPipelineByNumber.Execute,
 	},
 	defaultHandler: func(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
 		return util.SendEphemeralCommandResponse(invalidCommand)
@@ -948,6 +997,182 @@ func executeProjectSummary(context *model.CommandArgs, args ...string) (*model.C
 		return util.SendEphemeralCommandResponse(
 			"Failed to create post for project summary. Please try again later. If the problem persists, contact your system administrator.",
 		)
+	}
+
+	return &model.CommandResponse{}, nil
+}
+
+func executeGetPipelineByNumber(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+	vcsAlias, org, repo, pipelineNumber := args[0], args[1], args[2], args[3]
+
+	vcs, err := service.GetVCS(vcsAlias)
+	if err != nil {
+		return util.SendEphemeralCommandResponse("Failed to get VCS details. Please try again later. If the problem persists, contact your system administrator.")
+	}
+
+	authToken, appErr := config.Mattermost.KVGet(context.UserId + "_auth_token")
+	if appErr != nil {
+		return nil, appErr
+	}
+
+	if string(authToken) == "" {
+		return util.SendEphemeralCommandResponse("Not connected. Please connect and try again later.")
+	}
+
+	client := util.GetCircleciClient(string(authToken))
+	pipeline, pipelineResponse, err := client.PipelineApi.GetPipelineByNumber(nil, fmt.Sprintf("%s/%s/%s", vcs.BaseURL, org, repo), pipelineNumber)
+
+	if pipelineResponse != nil {
+		defer pipelineResponse.Body.Close()
+	}
+
+	if err != nil {
+		config.Mattermost.LogError(fmt.Sprintf(
+			"Failed to get pipeline data by number. VCS: %s, org: %s, repo: %s, pipeline number: %s, error: %s",
+			vcsAlias,
+			org,
+			repo,
+			pipelineNumber,
+			err.Error(),
+		))
+
+		return util.SendEphemeralCommandResponse("Failed to get pipeline details. Please try again later. If the problem persists, contact your system administrator.")
+	}
+
+	workflows, workflowResponse, err := client.PipelineApi.ListWorkflowsByPipelineId(nil, pipeline.Id, nil)
+
+	if workflowResponse != nil {
+		defer workflowResponse.Body.Close()
+	}
+
+	if err != nil {
+		config.Mattermost.LogError(fmt.Sprintf(
+			"Failed to get pipeline's workflows . VCS: %s, org: %s, repo: %s, pipeline ID: %s, error: %s",
+			vcsAlias,
+			org,
+			repo,
+			pipeline.Id,
+			err.Error(),
+		))
+
+		return util.SendEphemeralCommandResponse("Failed to get pipeline's workflows. Please try again later. If the problem persists, contact your system administrator.")
+	}
+
+	jobsByWorkflow := map[circleci2.Workflow1]circleci2.WorkflowJobListResponse{}
+
+	for i, workflow := range workflows.Items {
+		jobs, _, err := client.WorkflowApi.ListWorkflowJobs(nil, workflow.Id)
+
+		if err != nil {
+			config.Mattermost.LogError(fmt.Sprintf(
+				"Failed to get workflow's job. VCS: %s, org: %s, repo: %s, pipeline ID: %s, workflow ID: %s, error: %s",
+				vcsAlias,
+				org,
+				repo,
+				pipeline.Id,
+				workflow.Id,
+				err.Error(),
+			))
+
+			return util.SendEphemeralCommandResponse("Failed to get workflow's jobs. Please try again later. If the problem persists, contact your system administrator.")
+		}
+
+		jobsByWorkflow[workflows.Items[i]] = jobs
+	}
+
+	attachment := util.BaseSlackAttachment()
+	attachment.Title = fmt.Sprintf("Pipeline #%s (%s)", pipelineNumber, pipeline.ProjectSlug)
+	attachment.Fields = []*model.SlackAttachmentField{
+		{
+			Short: true,
+			Title: "Created On",
+			Value: pipeline.CreatedAt.Format(time.UnixDate),
+		},
+		{
+			Short: true,
+			Title: "triggered By",
+			Value: pipeline.Trigger.Actor.Login,
+		},
+		{
+			Short: false,
+			Title: "",
+			Value: "***",
+		},
+	}
+
+	for workflow, jobs := range jobsByWorkflow {
+		fields := []*model.SlackAttachmentField{
+			{
+				Short: true,
+				Title: "Workflow",
+				Value: workflow.Name,
+			},
+			{
+				Short: true,
+				Title: "Status",
+				Value: workflow.Status,
+			},
+		}
+
+		for _, job := range jobs.Items {
+			jobFields := []*model.SlackAttachmentField{
+				{
+					Short: false,
+					Title: "Job " + job.Name,
+					Value: "",
+				},
+				{
+					Short: true,
+					Title: "Job Number",
+					Value: fmt.Sprintf("%d", job.JobNumber),
+				},
+				{
+					Short: true,
+					Title: "Status",
+					Value: job.Status,
+				},
+				{
+					Short: true,
+					Title: "Type",
+					Value: job.Type_,
+				},
+				{
+					Short: true,
+					Title: "Started At",
+					Value: job.StartedAt,
+				},
+				{
+					Short: true,
+					Title: "Ended At",
+					Value: job.StoppedAt,
+				},
+			}
+
+			fields = append(fields, jobFields...)
+		}
+
+		attachment.Fields = append(attachment.Fields, fields...)
+	}
+
+	post := &model.Post{
+		UserId:    config.BotUserID,
+		ChannelId: context.ChannelId,
+	}
+
+	model.ParseSlackAttachment(post, []*model.SlackAttachment{attachment})
+
+	if _, appErr := config.Mattermost.CreatePost(post); appErr != nil {
+		config.Mattermost.LogError(fmt.Sprintf(
+			"Failed to create post for workflow by number. VCS: %s, org: %s, repo: %s, pipeline ID: %s, channelID: %s, error: %s",
+			vcsAlias,
+			org,
+			repo,
+			pipeline.Id,
+			context.ChannelId,
+			appErr.Error(),
+		))
+
+		return util.SendEphemeralCommandResponse("Failed to crete post. Please try again later. If the problem persists, contact your system administrator.")
 	}
 
 	return &model.CommandResponse{}, nil

@@ -11,11 +11,11 @@ var (
 	defaultVCSList = map[string]*serializer.VCS{
 		"github": {
 			Alias:   serializer.VCSTypeGithub,
-			BaseURL: "https://github.com",
+			BaseURL: "github",
 		},
 		"bitbucket": {
 			Alias:   serializer.VCSTypeBitbucket,
-			BaseURL: "https://bitbucket.org",
+			BaseURL: "bitbucket",
 		},
 	}
 )
