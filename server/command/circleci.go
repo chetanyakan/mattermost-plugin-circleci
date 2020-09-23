@@ -495,7 +495,7 @@ func executeListRecentBuilds(ctx *model.CommandArgs, args ...string) (*model.Com
 	}
 	client := util.GetCircleciClient(string(authToken))
 
-	vcs, org, repo, workflow := args[0], args[1], args[2], args[4]
+	vcs, org, repo, workflow := args[0], args[1], args[2], args[3]
 	builds, resp, err := client.InsightsApi.GetProjectWorkflowRuns(nil, vcs+"/"+org+"/"+repo, workflow, utils.Yesterday(), utils.Yesterday().Add(2*24*time.Hour), nil)
 
 	if err != nil {
@@ -591,7 +591,7 @@ func executeListRecentBuilds(ctx *model.CommandArgs, args ...string) (*model.Com
 			{
 				Short: true,
 				Title: "Pipeline Number",
-				Value: workflow.PipelineNumber,
+				Value: fmt.Sprintf("%d", workflow.PipelineNumber),
 			},
 		}...)
 	}
@@ -869,74 +869,72 @@ func executeProjectSummary(context *model.CommandArgs, args ...string) (*model.C
 			insight.WindowStart.Format(time.UnixDate),
 			insight.WindowEnd.Format(time.UnixDate),
 		)
-		
-		config.Mattermost.LogInfo(fmt.Sprintf("%v", insight))
 
 		attachment.Fields = []*model.SlackAttachmentField{
 			{
 				Short: true,
 				Title: "Total Runs",
-				Value: insight.Metrics.TotalRuns,
+				Value: fmt.Sprintf("%d", insight.Metrics.TotalRuns),
 			},
 			{
 				Short: true,
 				Title: "Successful Runs",
-				Value: insight.Metrics.SuccessfulRuns,
+				Value: fmt.Sprintf("%d", insight.Metrics.SuccessfulRuns),
 			},
 			{
 				Short: true,
 				Title: "Failed Runs",
-				Value: insight.Metrics.FailedRuns,
+				Value: fmt.Sprintf("%d", insight.Metrics.FailedRuns),
 			},
 			{
 				Short: true,
 				Title: "Success Rate",
-				Value: insight.Metrics.SuccessRate,
+				Value: fmt.Sprintf("%f", insight.Metrics.SuccessRate),
 			},
 			{
 				Short: true,
 				Title: "Throughput",
-				Value: insight.Metrics.Throughput,
+				Value: fmt.Sprintf("%f", insight.Metrics.Throughput),
 			},
 			{
 				Short: true,
 				Title: "MTTR",
-				Value: insight.Metrics.Mttr,
+				Value: fmt.Sprintf("%d", insight.Metrics.Mttr),
 			},
 			{
 				Short: true,
 				Title: "Total Credits Used",
-				Value: insight.Metrics.TotalCreditsUsed,
+				Value: fmt.Sprintf("%d", insight.Metrics.TotalCreditsUsed),
 			},
 			{
 				Short: true,
 				Title: "Duration: Min",
-				Value: insight.Metrics.DurationMetrics.Min,
+				Value: fmt.Sprintf("%d", insight.Metrics.DurationMetrics.Min),
 			},
 			{
 				Short: true,
 				Title: "Duration: Max",
-				Value: insight.Metrics.DurationMetrics.Max,
+				Value: fmt.Sprintf("%d", insight.Metrics.DurationMetrics.Max),
 			},
 			{
 				Short: true,
 				Title: "Duration: Median",
-				Value: insight.Metrics.DurationMetrics.Median,
+				Value: fmt.Sprintf("%d", insight.Metrics.DurationMetrics.Median),
 			},
 			{
 				Short: true,
 				Title: "Duration: Mean",
-				Value: insight.Metrics.DurationMetrics.Mean,
+				Value: fmt.Sprintf("%d", insight.Metrics.DurationMetrics.Mean),
 			},
 			{
 				Short: true,
 				Title: "Duration: P95",
-				Value: insight.Metrics.DurationMetrics.P95,
+				Value: fmt.Sprintf("%d", insight.Metrics.DurationMetrics.P95),
 			},
 			{
 				Short: true,
 				Title: "Duration: Standard Deviation",
-				Value: insight.Metrics.DurationMetrics.StandardDeviation,
+				Value: fmt.Sprintf("%f", insight.Metrics.DurationMetrics.StandardDeviation),
 			},
 		}
 		attachments[i] = attachment
