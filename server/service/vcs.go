@@ -12,10 +12,12 @@ var (
 		"github": {
 			Alias:   serializer.VCSTypeGithub,
 			BaseURL: "github",
+			Type:    serializer.VCSTypeGithub,
 		},
 		"bitbucket": {
 			Alias:   serializer.VCSTypeBitbucket,
 			BaseURL: "bitbucket",
+			Type:    serializer.VCSTypeBitbucket,
 		},
 	}
 )

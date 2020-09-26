@@ -3,7 +3,6 @@ package command
 import (
 	"context"
 	"fmt"
-	"github.com/chetanyakan/mattermost-plugin-circleci/server/store"
 	"net/http"
 	"strings"
 	"time"
@@ -379,6 +378,44 @@ var commandGetPipelineByNumber = &command{
 	},
 }
 
+var commandGetEnvironmentVariables = &command{
+	Execute: executeGetAllEnvironmentVariables,
+	AutocompleteData: &model.AutocompleteData{
+		Trigger:  "environment",
+		HelpText: "Get masked environment variables for a project.",
+		Arguments: []*model.AutocompleteArg{
+			{
+				HelpText: "VCS Alias",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "VCS Alias. Use `/circle list vcs` to view available VCS",
+					Pattern: ".+",
+				},
+			},
+			{
+				HelpText: "Org Name",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "Org name on the VCS. For example org name for `github.com/foo/bar` would be `foo`.",
+					Pattern: "._+",
+				},
+			},
+			{
+				HelpText: "Repository Name",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "Repository name on the VCS. For example repository name for `github.com/foo/bar` would be `bar`.",
+					Pattern: "._+",
+				},
+			},
+		},
+		SubCommands: nil,
+	},
+}
+
 var CircleCICommandHandler = Handler{
 	Command: &model.Command{
 		Trigger:          "circleci",
@@ -405,6 +442,7 @@ var CircleCICommandHandler = Handler{
 				commandListVCS.AutocompleteData,
 				commandProjectSummary.AutocompleteData,
 				commandGetPipelineByNumber.AutocompleteData,
+				commandGetEnvironmentVariables.AutocompleteData,
 			},
 		},
 	},
@@ -421,6 +459,7 @@ var CircleCICommandHandler = Handler{
 		"list/vcs":           commandListVCS.Execute,
 		"project/summary":    commandProjectSummary.Execute,
 		"pipeline":           commandGetPipelineByNumber.Execute,
+		"environment":        commandGetEnvironmentVariables.Execute,
 	},
 	defaultHandler: func(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
 		return util.SendEphemeralCommandResponse(invalidCommand)
@@ -544,8 +583,18 @@ func executeListRecentBuilds(ctx *model.CommandArgs, args ...string) (*model.Com
 	}
 	client := util.GetCircleciClient(string(authToken))
 
-	vcs, org, repo, workflow := args[0], args[1], args[2], args[3]
-	builds, resp, err := client.InsightsApi.GetProjectWorkflowRuns(nil, vcs+"/"+org+"/"+repo, workflow, utils.Yesterday(), utils.Yesterday().Add(2*24*time.Hour), nil)
+	vcsAlias, org, repo, workflow := args[0], args[1], args[2], args[3]
+
+	vcs, err := service.GetVCS(vcsAlias)
+	if err != nil {
+		return util.SendEphemeralCommandResponse("Failed to get VCS details. Please try again later. If the problem persists, contact your system administrator.")
+	}
+
+	builds, resp, err := client.InsightsApi.GetProjectWorkflowRuns(
+		nil,
+		fmt.Sprintf("%s/%s/%s", vcs.Type, org, repo), workflow, utils.Yesterday(), utils.Yesterday().Add(2*24*time.Hour),
+		nil,
+	)
 
 	if err != nil {
 		return util.SendEphemeralCommandResponse("Unable to connect to circleci. Make sure the auth token is still valid. Error: " + err.Error())
@@ -673,7 +722,13 @@ func executeBuild(ctx *model.CommandArgs, args ...string) (*model.CommandRespons
 		return util.SendEphemeralCommandResponse("Please specify the account, repo and branch names.")
 	}
 
-	vcsSlug, org, repo, headType, head := args[0], args[1], args[2], args[3], args[4]
+	vcsAlias, org, repo, headType, head := args[0], args[1], args[2], args[3], args[4]
+
+	vcs, err := service.GetVCS(vcsAlias)
+	if err != nil {
+		return util.SendEphemeralCommandResponse("Failed to get VCS details. Please try again later. If the problem persists, contact your system administrator.")
+	}
+
 	client := util.GetCircleciClient(string(authToken))
 
 	// TODO need to add support for tag here
@@ -688,14 +743,14 @@ func executeBuild(ctx *model.CommandArgs, args ...string) (*model.CommandRespons
 		return util.SendEphemeralCommandResponse(fmt.Sprintf("Invalid head type. Please specify one of `%s` or `%s`", HeadTypeBranch, HeadTypeTag))
 	}
 
-	build, response, err := client.PipelineApi.TriggerPipeline(nil, vcsSlug+"/"+org+"/"+repo, &circleci2.PipelineApiTriggerPipelineOpts{
+	build, response, err := client.PipelineApi.TriggerPipeline(nil, vcs.Type+"/"+org+"/"+repo, &circleci2.PipelineApiTriggerPipelineOpts{
 		Body: optional.NewInterface(body),
 	})
 
 	if err != nil {
 		config.Mattermost.LogError(fmt.Sprintf(
 			"Failed to trigger build. VCS slug: %s, repo: %s, head type: %s, head: %s, error: %s, response: %v",
-			vcsSlug,
+			vcsAlias,
 			repo,
 			headType,
 			head,
@@ -722,7 +777,7 @@ func executeBuild(ctx *model.CommandArgs, args ...string) (*model.CommandRespons
 		config.Mattermost.LogError(fmt.Sprintf(
 			"Failed to fetch pipeline details. Pipeline ID: %s, VCS slug: %s, repo: %s, head type: %s, head: %s, error: %s, response: %v",
 			build.Id,
-			vcsSlug,
+			vcsAlias,
 			repo,
 			headType,
 			head,
@@ -742,7 +797,7 @@ func executeBuild(ctx *model.CommandArgs, args ...string) (*model.CommandRespons
 		attachmentFields[i] = &model.SlackAttachmentField{
 			Short: false,
 			Title: "Workflow: " + strings.Title(workflow.Name),
-			Value: fmt.Sprintf("https://app.circleci.com/pipelines/%s/%d/workflows/%s", vcsSlug+"/"+repo, build.Number, workflow.Id),
+			Value: fmt.Sprintf("https://app.circleci.com/pipelines/%s/%d/workflows/%s", vcsAlias+"/"+repo, build.Number, workflow.Id),
 		}
 	}
 
@@ -780,15 +835,17 @@ func executeBuild(ctx *model.CommandArgs, args ...string) (*model.CommandRespons
 
 func executeAddVCS(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
 	config.Mattermost.LogInfo(fmt.Sprintf("%v", args))
-	if len(args) < 2 {
-		return util.SendEphemeralCommandResponse("Invalid number of arguments. Use this command as `/cirecleci add vcs [alias] [base URL]`")
+	if len(args) < 3 {
+		return util.SendEphemeralCommandResponse("Invalid number of arguments. Use this command as `/cirecleci add vcs [github | bitbucket] [alias] [base URL]`")
 	}
 
-	alias, baseURL := args[0], args[1]
+	vcsType, alias, baseURL := args[0], args[1], args[2]
 
 	existingVCS, err := service.GetVCS(alias)
 	if err != nil {
-		return util.SendEphemeralCommandResponse("Failed to check for existing VCS with same alias. Please try again later. If the problem persists, contact your system administrator.")
+		return util.SendEphemeralCommandResponse(
+			"Failed to check for existing VCS with same alias. Please try again later. If the problem persists, contact your system administrator.",
+		)
 	}
 
 	if existingVCS != nil {
@@ -798,6 +855,7 @@ func executeAddVCS(context *model.CommandArgs, args ...string) (*model.CommandRe
 	vcs := &serializer.VCS{
 		Alias:   alias,
 		BaseURL: baseURL,
+		Type:    vcsType,
 	}
 
 	if err := service.AddVCS(vcs); err != nil {
@@ -852,9 +910,9 @@ func executeListVCS(context *model.CommandArgs, args ...string) (*model.CommandR
 		return util.SendEphemeralCommandResponse("Failed to fetch list of VCS. Please try again later. If the problem persists, contact your system administrator.")
 	}
 
-	message := "Available VCS -\n\n| No.  | Alias  | Base URL |\n|:------------|:------------|:------------|\n"
+	message := "Available VCS -\n\n| No.  | Type | Alias | Base URL |\n|:------------|:------------|:------------|:------------|\n"
 	for i, vcs := range vcsList {
-		message += fmt.Sprintf("|%d|%s|%s|\n", i+1, vcs.Alias, vcs.BaseURL)
+		message += fmt.Sprintf("|%d|%s|%s|%s|\n", i+1, vcs.Type, vcs.Alias, vcs.BaseURL)
 	}
 
 	_, _ = config.Mattermost.CreatePost(&model.Post{
@@ -868,12 +926,13 @@ func executeListVCS(context *model.CommandArgs, args ...string) (*model.CommandR
 
 func executeProjectSummary(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
 	if len(args) < 1 {
-		return util.SendEphemeralCommandResponse("Incorrect syntax. Use this command as `/circleci project summary <project alias>`")
+		return util.SendEphemeralCommandResponse("Incorrect syntax. Use this command as `/circleci project summary <VCS alias> <org> <repo>`")
 	}
 
-	project, err := store.GetVCS(args[0])
+	vcsAlias, org, repo := args[0], args[1], args[2]
+	vcs, err := service.GetVCS(vcsAlias)
 	if err != nil {
-		return util.SendEphemeralCommandResponse("Failed to fetch project data. Please try again later. If the problem persists, contact your system administrator.")
+		return util.SendEphemeralCommandResponse("Failed to get VCS details. Please try again later. If the problem persists, contact your system administrator.")
 	}
 
 	authToken, appErr := config.Mattermost.KVGet(context.UserId + "_auth_token")
@@ -885,7 +944,7 @@ func executeProjectSummary(context *model.CommandArgs, args ...string) (*model.C
 	}
 	client := util.GetCircleciClient(string(authToken))
 
-	insights, response, err := client.InsightsApi.GetProjectWorkflowMetrics(nil, project.BaseURL, nil)
+	insights, response, err := client.InsightsApi.GetProjectWorkflowMetrics(nil, fmt.Sprintf("%s/%s/%s", vcs.Type, org, repo), nil)
 	if err != nil {
 		config.Mattermost.LogError(fmt.Sprintf(
 			"Failed to fetch project summary. Project slug: %s, error: %s",
@@ -913,7 +972,7 @@ func executeProjectSummary(context *model.CommandArgs, args ...string) (*model.C
 		attachment := util.BaseSlackAttachment()
 		attachment.Title = fmt.Sprintf(
 			"Project Summary: %s | %s | %s to %s",
-			project.Alias,
+			fmt.Sprintf("%s/%s/%s", vcs.Type, org, repo),
 			strings.Title(insight.Name),
 			insight.WindowStart.Format(time.UnixDate),
 			insight.WindowEnd.Format(time.UnixDate),
@@ -1003,6 +1062,10 @@ func executeProjectSummary(context *model.CommandArgs, args ...string) (*model.C
 }
 
 func executeGetPipelineByNumber(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+	if len(args) < 4 {
+		return util.SendEphemeralCommandResponse("Incorrect syntax. Use this command as `/circleci pipeline <vcs alias> <org> <repo> <pipeline number>`")
+	}
+
 	vcsAlias, org, repo, pipelineNumber := args[0], args[1], args[2], args[3]
 
 	vcs, err := service.GetVCS(vcsAlias)
@@ -1020,7 +1083,7 @@ func executeGetPipelineByNumber(context *model.CommandArgs, args ...string) (*mo
 	}
 
 	client := util.GetCircleciClient(string(authToken))
-	pipeline, pipelineResponse, err := client.PipelineApi.GetPipelineByNumber(nil, fmt.Sprintf("%s/%s/%s", vcs.BaseURL, org, repo), pipelineNumber)
+	pipeline, pipelineResponse, err := client.PipelineApi.GetPipelineByNumber(nil, fmt.Sprintf("%s/%s/%s", vcs.Type, org, repo), pipelineNumber)
 
 	if pipelineResponse != nil {
 		defer pipelineResponse.Body.Close()
@@ -1118,8 +1181,13 @@ func executeGetPipelineByNumber(context *model.CommandArgs, args ...string) (*mo
 			jobFields := []*model.SlackAttachmentField{
 				{
 					Short: false,
-					Title: "Job " + job.Name,
-					Value: "",
+					Title: "",
+					Value: "***",
+				},
+				{
+					Short: false,
+					Title: "Job ",
+					Value: strings.Title(job.Name),
 				},
 				{
 					Short: true,
@@ -1139,12 +1207,12 @@ func executeGetPipelineByNumber(context *model.CommandArgs, args ...string) (*mo
 				{
 					Short: true,
 					Title: "Started At",
-					Value: job.StartedAt,
+					Value: job.StartedAt.Format(time.UnixDate),
 				},
 				{
 					Short: true,
 					Title: "Ended At",
-					Value: job.StoppedAt,
+					Value: job.StoppedAt.Format(time.UnixDate),
 				},
 			}
 
@@ -1173,6 +1241,60 @@ func executeGetPipelineByNumber(context *model.CommandArgs, args ...string) (*mo
 		))
 
 		return util.SendEphemeralCommandResponse("Failed to crete post. Please try again later. If the problem persists, contact your system administrator.")
+	}
+
+	return &model.CommandResponse{}, nil
+}
+
+func executeGetAllEnvironmentVariables(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+	if len(args) < 3 {
+		return util.SendEphemeralCommandResponse("Incorrect syntax. Use this command as `/circleci env vars <vcs alias> <org> <repo>`")
+	}
+
+	vcsAlias, org, repo := args[0], args[1], args[2]
+
+	vcs, err := service.GetVCS(vcsAlias)
+	if err != nil {
+		return util.SendEphemeralCommandResponse("Failed to get VCS details. Please try again later. If the problem persists, contact your system administrator.")
+	}
+
+	authToken, appErr := config.Mattermost.KVGet(context.UserId + "_auth_token")
+	if appErr != nil {
+		return nil, appErr
+	}
+
+	if string(authToken) == "" {
+		return util.SendEphemeralCommandResponse("Not connected. Please connect and try again later.")
+	}
+
+	client := util.GetCircleciClient(string(authToken))
+	projectSlug := fmt.Sprintf("%s/%s/%s", vcs.Type, org, repo)
+
+	envVars, response, err := client.ProjectApi.ListEnvVars(nil, projectSlug)
+	if response != nil {
+		defer response.Body.Close()
+	}
+
+	attachment := util.BaseSlackAttachment()
+	attachment.Title = "Masked Environment Variables for : " + projectSlug
+	attachment.Fields = make([]*model.SlackAttachmentField, len(envVars.Items))
+
+	for i, envVar := range envVars.Items {
+		attachment.Fields[i] = &model.SlackAttachmentField{
+			Short: true,
+			Title: envVar.Name,
+			Value: envVar.Value,
+		}
+	}
+
+	post := &model.Post{
+		UserId:    config.BotUserID,
+		ChannelId: context.ChannelId,
+	}
+	model.ParseSlackAttachment(post, []*model.SlackAttachment{attachment})
+	if _, appErr := config.Mattermost.CreatePost(post); appErr != nil {
+		config.Mattermost.LogError(fmt.Sprintf("Could not post environment variable post. Channel ID: %s, error: %s", context.ChannelId, appErr.Error()))
+		return util.SendEphemeralCommandResponse("Could not create post. Please try again later. If the problem persists, contact your system administrator.")
 	}
 
 	return &model.CommandResponse{}, nil
