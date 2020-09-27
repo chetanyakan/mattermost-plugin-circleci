@@ -78,12 +78,12 @@ orbs:
       mmstatus:
         executor: mattermostexecutor
         steps:
+          - plugin-ci/lint
+          - plugin-ci/test
+          - plugin-ci/build
           - status
 
 workflows:
   main:
     jobs:
-      - plugin-ci/lint
-      - plugin-ci/test
-      - plugin-ci/build
       - mattermost/mmstatus
