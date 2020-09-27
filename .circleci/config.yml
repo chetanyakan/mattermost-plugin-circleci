@@ -1,6 +1,7 @@
 version: 2.1
 
 orbs:
+  plugin-ci: mattermost/plugin-ci@volatile
   mattermost:
     description: Easily integrate custom Mattermost notifications into your CircleCI projects.
     executors:
@@ -55,7 +56,8 @@ orbs:
                 else
                   # Webhook properly set.
                   echo Sending Mattermost Notifiaction
-                  curl -X POST -H 'Content-type: application/json' \
+                  curl -i -X POST \
+                    -H 'Content-Type: application/json' \
                     --data \
                     "{ \
                       \"status\":\"$MM_BUILD_STATUS\", \
@@ -79,12 +81,12 @@ orbs:
       mmstatus:
         executor: mattermostexecutor
         steps:
-          - plugin-ci/lint
-          - plugin-ci/test
-          - plugin-ci/build
           - status
 
 workflows:
   main:
     jobs:
+      - plugin-ci/lint
+      - plugin-ci/test
+      - plugin-ci/build
       - mattermost/mmstatus
