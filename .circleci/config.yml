@@ -1,7 +1,6 @@
 version: 2.1
 
 orbs:
-  plugin-ci: mattermost/plugin-ci@volatile
   mattermost:
     description: Easily integrate custom Mattermost notifications into your CircleCI projects.
     executors:
@@ -11,6 +10,8 @@ orbs:
           - image: cibuilds/base:latest
             environment:
               TERM: dumb
+    orbs:
+      plugin-ci: mattermost/plugin-ci@volatile
     commands:
       status:
         description: >
