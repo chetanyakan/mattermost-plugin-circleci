@@ -62,6 +62,7 @@ orbs:
                     "{ \
                       \"status\":\"$MM_BUILD_STATUS\", \
                       \"build_url\": \"$CIRCLE_BUILD_URL\", \
+                      \"repo_url\": \"$CIRCLE_REPOSITORY_URL\", \
                       \"repo_name\":\"$CIRCLE_PROJECT_REPONAME\", \
                       \"build_num\":\"$CIRCLE_BUILD_NUM\", \
                       \"tag\":\"$CIRCLE_TAG\", \
