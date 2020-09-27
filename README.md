@@ -3,7 +3,7 @@
 [![Build Status](https://img.shields.io/circleci/project/github/chetanyakan/mattermost-plugin-circleci/master)](https://circleci.com/gh/chetanyakan/mattermost-plugin-circleci)
 [![Release](https://img.shields.io/github/v/release/chetanyakan/mattermost-plugin-circleci)](https://github.com/chetanyakan/mattermost-plugin-circleci/releases/latest)
 
-### Platform & tools
+## Platform & tools
 
 - Make sure you have following components installed:
 
@@ -22,7 +22,7 @@ Set up CircleCI to run the build job for each branch and build-and-release for e
    - Follow the instructions [here](https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line) to create a personal access token. For CircleCI releases, you would need the `repo` scope.
    - Add the environment variable to your project as `GITHUB_TOKEN` by following the instructions [here](https://circleci.com/docs/2.0/env-vars/#setting-an-environment-variable-in-a-project).
    
-#### Usage Instructions
+## Usage Instructions
 
 Bot User: CircleCI
 
