@@ -8,4 +8,5 @@ const (
 type VCS struct {
 	Alias   string `json:"alias"`
 	BaseURL string `json:"base_url"`
+	Type    string `json:"type"`
 }
