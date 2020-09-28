@@ -1405,6 +1405,8 @@ func executeRecentWorkflowRuns(context *model.CommandArgs, args ...string) (*mod
 
 	runsPerPost := 10
 
+	// Having too many attachments in a post can exceed the safe limit.
+	// That's why here we're splitting it into multiple posts.
 	for i := 0; i < len(workflowRuns.Items); i += runsPerPost {
 		items := workflowRuns.Items[i:funk.MinInt([]int{i + runsPerPost, len(workflowRuns.Items)}).(int)]
 
