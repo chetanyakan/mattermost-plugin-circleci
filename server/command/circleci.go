@@ -153,28 +153,36 @@ var commandBuild = &command{
 		Arguments: []*model.AutocompleteArg{
 			{
 				HelpText: "VCS Alias",
-				Type:     model.AutocompleteArgTypeText,
+				Type:     model.AutocompleteArgTypeStaticList,
 				Required: true,
-				Data: &model.AutocompleteTextArg{
-					Hint:    "VCS Alias. Use `/circle list vcs` to view available VCS",
-					Pattern: ".+",
+				Data: &model.AutocompleteStaticListArg{
+					PossibleArguments: []model.AutocompleteListItem{
+						{
+							Item:     "github",
+							HelpText: "Use a Github repository",
+						},
+						{
+							Item:     "bitbucket",
+							HelpText: "Use a Bitbucket repository",
+						},
+					},
 				},
 			},
 			{
-				HelpText: "Org Name",
+				HelpText: "Org name on the VCS. For example org name for `github.com/foo/bar` would be `foo`.",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
 				Data: &model.AutocompleteTextArg{
-					Hint:    "Org name on the VCS. For example org name for `github.com/foo/bar` would be `foo`.",
+					Hint:    "Org Name",
 					Pattern: "._+",
 				},
 			},
 			{
-				HelpText: "Repository Name",
+				HelpText: "Repository name on the VCS. For example repository name for `github.com/foo/bar` would be `bar`.",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
 				Data: &model.AutocompleteTextArg{
-					Hint:    "Repository name on the VCS. For example repository name for `github.com/foo/bar` would be `bar`.",
+					Hint:    "Repository Name",
 					Pattern: "._+",
 				},
 			},
@@ -196,11 +204,11 @@ var commandBuild = &command{
 				},
 			},
 			{
-				HelpText: "Head to build against",
+				HelpText: "Branch or tag name to build against.",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
 				Data: &model.AutocompleteTextArg{
-					Hint:    "Branch or tag name to build against.",
+					Hint:    "Head to build against",
 					Pattern: "._+",
 				},
 			},
@@ -212,20 +220,28 @@ var commandBuild = &command{
 var commandRecentBuilds = &command{
 	Execute: executeListRecentBuilds,
 	AutocompleteData: &model.AutocompleteData{
-		Trigger:  "recent builds",
+		Trigger:  "recent-builds",
 		HelpText: "List recent builds of specified pipeline",
 		Arguments: []*model.AutocompleteArg{
 			{
 				HelpText: "VCS Alias",
-				Type:     model.AutocompleteArgTypeText,
+				Type:     model.AutocompleteArgTypeStaticList,
 				Required: true,
-				Data: &model.AutocompleteTextArg{
-					Hint:    "VCS Alias. Use `/circle list vcs` to view available VCS",
-					Pattern: ".+",
+				Data: &model.AutocompleteStaticListArg{
+					PossibleArguments: []model.AutocompleteListItem{
+						{
+							Item:     "github",
+							HelpText: "Use a Github repository",
+						},
+						{
+							Item:     "bitbucket",
+							HelpText: "Use a Bitbucket repository",
+						},
+					},
 				},
 			},
 			{
-				HelpText: "Org Name",
+				HelpText: "Org name on the VCS. For example org name for `github.com/foo/bar` would be `foo`.Org Name",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
 				Data: &model.AutocompleteTextArg{
@@ -234,20 +250,20 @@ var commandRecentBuilds = &command{
 				},
 			},
 			{
-				HelpText: "Repository Name",
+				HelpText: "Repository name on the VCS. For example repository name for `github.com/foo/bar` would be `bar`.",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
 				Data: &model.AutocompleteTextArg{
-					Hint:    "Repository name on the VCS. For example repository name for `github.com/foo/bar` would be `bar`.",
+					Hint:    "Repository Name",
 					Pattern: "._+",
 				},
 			},
 			{
-				HelpText: "Workflow name to list recent builds of",
+				HelpText: "Workflow name to list recent builds of. Example - `build`, `release`.",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
 				Data: &model.AutocompleteTextArg{
-					Hint:    "Workflow name to list recent builds of. Example - `build`, `release`.",
+					Hint:    "Workflow name",
 					Pattern: "._+",
 				},
 			},
@@ -263,11 +279,11 @@ var commandAddVCS = &command{
 		HelpText: "Add new VCS alias",
 		Arguments: []*model.AutocompleteArg{
 			{
-				HelpText: "VCS Alias",
+				HelpText: "Name to be used as VCS alias.",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
 				Data: &model.AutocompleteTextArg{
-					Hint:    "Name to be used as VCS alias",
+					Hint:    "VCS Alias",
 					Pattern: ".+",
 				},
 			},
@@ -292,11 +308,11 @@ var commandDeleteVCS = &command{
 		HelpText: "Delete an existing VCS alias",
 		Arguments: []*model.AutocompleteArg{
 			{
-				HelpText: "VCS Alias",
+				HelpText: "Name to be used as VCS alias",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
 				Data: &model.AutocompleteTextArg{
-					Hint:    "Name to be used as VCS alias",
+					Hint:    "VCS Alias",
 					Pattern: ".+",
 				},
 			},
@@ -316,15 +332,15 @@ var commandListVCS = &command{
 var commandProjectSummary = &command{
 	Execute: executeProjectSummary,
 	AutocompleteData: &model.AutocompleteData{
-		Trigger:  "project summary",
+		Trigger:  "project-summary",
 		HelpText: "Show project summary",
 		Arguments: []*model.AutocompleteArg{
 			{
-				HelpText: "Project",
+				HelpText: "VCS Alias. Use `/circle list projects` to view available projects",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
 				Data: &model.AutocompleteTextArg{
-					Hint:    "VCS Alias. Use `/circle list projects` to view available projects",
+					Hint:    "Project",
 					Pattern: ".+",
 				},
 			},
@@ -340,29 +356,29 @@ var commandGetPipelineByNumber = &command{
 		HelpText: "Get details of a pipeline.",
 		Arguments: []*model.AutocompleteArg{
 			{
-				HelpText: "VCS Alias",
+				HelpText: "VCS Alias. Use `/circle list vcs` to view available VCS",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
 				Data: &model.AutocompleteTextArg{
-					Hint:    "VCS Alias. Use `/circle list vcs` to view available VCS",
+					Hint:    "VCS Alias",
 					Pattern: ".+",
 				},
 			},
 			{
-				HelpText: "Org Name",
+				HelpText: "Org name on the VCS. For example org name for `github.com/foo/bar` would be `foo`.",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
 				Data: &model.AutocompleteTextArg{
-					Hint:    "Org name on the VCS. For example org name for `github.com/foo/bar` would be `foo`.",
+					Hint:    "Org Name",
 					Pattern: "._+",
 				},
 			},
 			{
-				HelpText: "Repository Name",
+				HelpText: "Repository name on the VCS. For example repository name for `github.com/foo/bar` would be `bar`.",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
 				Data: &model.AutocompleteTextArg{
-					Hint:    "Repository name on the VCS. For example repository name for `github.com/foo/bar` would be `bar`.",
+					Hint:    "Repository Name",
 					Pattern: "._+",
 				},
 			},
@@ -387,29 +403,29 @@ var commandGetEnvironmentVariables = &command{
 		HelpText: "Get masked environment variables for a project.",
 		Arguments: []*model.AutocompleteArg{
 			{
-				HelpText: "VCS Alias",
+				HelpText: "VCS Alias. Use `/circle list vcs` to view available VCS",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
 				Data: &model.AutocompleteTextArg{
-					Hint:    "VCS Alias. Use `/circle list vcs` to view available VCS",
+					Hint:    "VCS Alias",
 					Pattern: ".+",
 				},
 			},
 			{
-				HelpText: "Org Name",
+				HelpText: "Org name on the VCS. For example org name for `github.com/foo/bar` would be `foo`.",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
 				Data: &model.AutocompleteTextArg{
-					Hint:    "Org name on the VCS. For example org name for `github.com/foo/bar` would be `foo`.",
+					Hint:    "Org Name",
 					Pattern: "._+",
 				},
 			},
 			{
-				HelpText: "Repository Name",
+				HelpText: "Repository name on the VCS. For example repository name for `github.com/foo/bar` would be `bar`.",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
 				Data: &model.AutocompleteTextArg{
-					Hint:    "Repository name on the VCS. For example repository name for `github.com/foo/bar` would be `bar`.",
+					Hint:    "Repository Name",
 					Pattern: "._+",
 				},
 			},
@@ -421,33 +437,33 @@ var commandGetEnvironmentVariables = &command{
 var commandRecentWorkflowRuns = &command{
 	Execute: executeRecentWorkflowRuns,
 	AutocompleteData: &model.AutocompleteData{
-		Trigger:  "workflow insights",
+		Trigger:  "workflow-insights",
 		HelpText: "Get insight for a workflow's recent runs.",
 		Arguments: []*model.AutocompleteArg{
 			{
-				HelpText: "VCS Alias",
+				HelpText: "VCS Alias. Use `/circle list vcs` to view available VCS",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
 				Data: &model.AutocompleteTextArg{
-					Hint:    "VCS Alias. Use `/circle list vcs` to view available VCS",
+					Hint:    "VCS Alias",
 					Pattern: ".+",
 				},
 			},
 			{
-				HelpText: "Org Name",
+				HelpText: "Org name on the VCS. For example org name for `github.com/foo/bar` would be `foo`.",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
 				Data: &model.AutocompleteTextArg{
-					Hint:    "Org name on the VCS. For example org name for `github.com/foo/bar` would be `foo`.",
+					Hint:    "Org Name",
 					Pattern: "._+",
 				},
 			},
 			{
-				HelpText: "Repository Name",
+				HelpText: "Repository name on the VCS. For example repository name for `github.com/foo/bar` would be `bar`.",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
 				Data: &model.AutocompleteTextArg{
-					Hint:    "Repository name on the VCS. For example repository name for `github.com/foo/bar` would be `bar`.",
+					Hint:    "Repository Name",
 					Pattern: "._+",
 				},
 			},
@@ -507,10 +523,10 @@ var CircleCICommandHandler = Handler{
 		//"add/vcs":            commandAddVCS.Execute,
 		//"delete/vcs":         commandDeleteVCS.Execute,
 		//"list/vcs":           commandListVCS.Execute,
-		"project/summary":    commandProjectSummary.Execute,
+		"project-summary":    commandProjectSummary.Execute,
 		"pipeline":           commandGetPipelineByNumber.Execute,
 		"environment":        commandGetEnvironmentVariables.Execute,
-		"workflow/insights":  commandRecentWorkflowRuns.Execute,
+		"workflow-insights":  commandRecentWorkflowRuns.Execute,
 	},
 	defaultHandler: func(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
 		return util.SendEphemeralCommandResponse(invalidCommand)
