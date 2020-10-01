@@ -83,20 +83,20 @@ var commandSubscribe = &command{
 				},
 			},
 			{
-				HelpText: "Org Name",
+				HelpText: "Org name on the VCS. For example org name for `github.com/foo/bar` would be `foo`.",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
 				Data: &model.AutocompleteTextArg{
-					Hint:    "Org name on the VCS. For example org name for `github.com/foo/bar` would be `foo`.",
+					Hint:    "Org Name",
 					Pattern: "._+",
 				},
 			},
 			{
-				HelpText: "Repository Name",
+				HelpText: "Repository name on the VCS. For example repository name for `github.com/foo/bar` would be `bar`.",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
 				Data: &model.AutocompleteTextArg{
-					Hint:    "Repository name on the VCS. For example repository name for `github.com/foo/bar` would be `bar`.",
+					Hint:    "Repository Name",
 					Pattern: "._+",
 				},
 			},
@@ -129,20 +129,20 @@ var commandUnsubscribe = &command{
 				},
 			},
 			{
-				HelpText: "Org Name",
+				HelpText: "Org name on the VCS. For example org name for `github.com/foo/bar` would be `foo`.",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
 				Data: &model.AutocompleteTextArg{
-					Hint:    "Org name on the VCS. For example org name for `github.com/foo/bar` would be `foo`.",
+					Hint:    "Org Name",
 					Pattern: "._+",
 				},
 			},
 			{
-				HelpText: "Repository Name",
+				HelpText: "Repository name on the VCS. For example repository name for `github.com/foo/bar` would be `bar`.",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
 				Data: &model.AutocompleteTextArg{
-					Hint:    "Repository name on the VCS. For example repository name for `github.com/foo/bar` would be `bar`.",
+					Hint:    "Repository Name",
 					Pattern: "._+",
 				},
 			},
@@ -261,7 +261,7 @@ var commandRecentBuilds = &command{
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
 				Data: &model.AutocompleteTextArg{
-					Hint:    "Org name on the VCS. For example org name for `github.com/foo/bar` would be `foo`.",
+					Hint:    "Org name",
 					Pattern: "._+",
 				},
 			},
@@ -1442,7 +1442,7 @@ func executeGetAllEnvironmentVariables(context *model.CommandArgs, args ...strin
 
 func executeRecentWorkflowRuns(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
 	if len(args) < 4 {
-		return util.SendEphemeralCommandResponse("Incorrect syntax. Use this command as `/circleci workflow insights <vcs alias> <org> <repo> <workflow name>`")
+		return util.SendEphemeralCommandResponse("Incorrect syntax. Use this command as `/circleci workflow-insights <vcs alias> <org> <repo> <workflow name>`")
 	}
 
 	vcsAlias, org, repo, workflowName := args[0], args[1], args[2], args[3]
