@@ -2,6 +2,7 @@
 
 [![Build Status](https://img.shields.io/circleci/project/github/chetanyakan/mattermost-plugin-circleci/master)](https://circleci.com/gh/chetanyakan/mattermost-plugin-circleci)
 [![Release](https://img.shields.io/github/v/release/chetanyakan/mattermost-plugin-circleci)](https://github.com/chetanyakan/mattermost-plugin-circleci/releases/latest)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fchetanyakan%2Fmattermost-plugin-circleci.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fchetanyakan%2Fmattermost-plugin-circleci?ref=badge_shield)
 
 ### Platform & tools
 
@@ -35,3 +36,7 @@ Slash Commands:
 Webhooks:
 
 - For all finished builds (successful or failed)
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fchetanyakan%2Fmattermost-plugin-circleci.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fchetanyakan%2Fmattermost-plugin-circleci?ref=badge_large)
