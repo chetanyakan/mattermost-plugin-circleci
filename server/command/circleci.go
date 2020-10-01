@@ -67,11 +67,19 @@ var commandSubscribe = &command{
 		Arguments: []*model.AutocompleteArg{
 			{
 				HelpText: "VCS Alias",
-				Type:     model.AutocompleteArgTypeText,
+				Type:     model.AutocompleteArgTypeStaticList,
 				Required: true,
-				Data: &model.AutocompleteTextArg{
-					Hint:    "VCS Alias. Use `/circle list vcs` to view available VCS",
-					Pattern: ".+",
+				Data: &model.AutocompleteStaticListArg{
+					PossibleArguments: []model.AutocompleteListItem{
+						{
+							Item:     "github",
+							HelpText: "Use a Github repository",
+						},
+						{
+							Item:     "bitbucket",
+							HelpText: "Use a Bitbucket repository",
+						},
+					},
 				},
 			},
 			{
@@ -105,11 +113,19 @@ var commandUnsubscribe = &command{
 		Arguments: []*model.AutocompleteArg{
 			{
 				HelpText: "VCS Alias",
-				Type:     model.AutocompleteArgTypeText,
+				Type:     model.AutocompleteArgTypeStaticList,
 				Required: true,
-				Data: &model.AutocompleteTextArg{
-					Hint:    "VCS Alias. Use `/circle list vcs` to view available VCS",
-					Pattern: ".+",
+				Data: &model.AutocompleteStaticListArg{
+					PossibleArguments: []model.AutocompleteListItem{
+						{
+							Item:     "github",
+							HelpText: "Use a Github repository",
+						},
+						{
+							Item:     "bitbucket",
+							HelpText: "Use a Bitbucket repository",
+						},
+					},
 				},
 			},
 			{
@@ -336,12 +352,38 @@ var commandProjectSummary = &command{
 		HelpText: "Show project summary",
 		Arguments: []*model.AutocompleteArg{
 			{
-				HelpText: "VCS Alias. Use `/circle list projects` to view available projects",
+				HelpText: "VCS Alias",
+				Type:     model.AutocompleteArgTypeStaticList,
+				Required: true,
+				Data: &model.AutocompleteStaticListArg{
+					PossibleArguments: []model.AutocompleteListItem{
+						{
+							Item:     "github",
+							HelpText: "Use a Github repository",
+						},
+						{
+							Item:     "bitbucket",
+							HelpText: "Use a Bitbucket repository",
+						},
+					},
+				},
+			},
+			{
+				HelpText: "Org name on the VCS. For example org name for `github.com/foo/bar` would be `foo`.",
 				Type:     model.AutocompleteArgTypeText,
 				Required: true,
 				Data: &model.AutocompleteTextArg{
-					Hint:    "Project",
-					Pattern: ".+",
+					Hint:    "Org Name",
+					Pattern: "._+",
+				},
+			},
+			{
+				HelpText: "Repository name on the VCS. For example repository name for `github.com/foo/bar` would be `bar`.",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "Repository Name",
+					Pattern: "._+",
 				},
 			},
 		},
@@ -356,12 +398,20 @@ var commandGetPipelineByNumber = &command{
 		HelpText: "Get details of a pipeline.",
 		Arguments: []*model.AutocompleteArg{
 			{
-				HelpText: "VCS Alias. Use `/circle list vcs` to view available VCS",
-				Type:     model.AutocompleteArgTypeText,
+				HelpText: "VCS Alias",
+				Type:     model.AutocompleteArgTypeStaticList,
 				Required: true,
-				Data: &model.AutocompleteTextArg{
-					Hint:    "VCS Alias",
-					Pattern: ".+",
+				Data: &model.AutocompleteStaticListArg{
+					PossibleArguments: []model.AutocompleteListItem{
+						{
+							Item:     "github",
+							HelpText: "Use a Github repository",
+						},
+						{
+							Item:     "bitbucket",
+							HelpText: "Use a Bitbucket repository",
+						},
+					},
 				},
 			},
 			{
@@ -403,12 +453,20 @@ var commandGetEnvironmentVariables = &command{
 		HelpText: "Get masked environment variables for a project.",
 		Arguments: []*model.AutocompleteArg{
 			{
-				HelpText: "VCS Alias. Use `/circle list vcs` to view available VCS",
-				Type:     model.AutocompleteArgTypeText,
+				HelpText: "VCS Alias",
+				Type:     model.AutocompleteArgTypeStaticList,
 				Required: true,
-				Data: &model.AutocompleteTextArg{
-					Hint:    "VCS Alias",
-					Pattern: ".+",
+				Data: &model.AutocompleteStaticListArg{
+					PossibleArguments: []model.AutocompleteListItem{
+						{
+							Item:     "github",
+							HelpText: "Use a Github repository",
+						},
+						{
+							Item:     "bitbucket",
+							HelpText: "Use a Bitbucket repository",
+						},
+					},
 				},
 			},
 			{
@@ -441,12 +499,20 @@ var commandRecentWorkflowRuns = &command{
 		HelpText: "Get insight for a workflow's recent runs.",
 		Arguments: []*model.AutocompleteArg{
 			{
-				HelpText: "VCS Alias. Use `/circle list vcs` to view available VCS",
-				Type:     model.AutocompleteArgTypeText,
+				HelpText: "VCS Alias",
+				Type:     model.AutocompleteArgTypeStaticList,
 				Required: true,
-				Data: &model.AutocompleteTextArg{
-					Hint:    "VCS Alias",
-					Pattern: ".+",
+				Data: &model.AutocompleteStaticListArg{
+					PossibleArguments: []model.AutocompleteListItem{
+						{
+							Item:     "github",
+							HelpText: "Use a Github repository",
+						},
+						{
+							Item:     "bitbucket",
+							HelpText: "Use a Bitbucket repository",
+						},
+					},
 				},
 			},
 			{
@@ -483,12 +549,12 @@ var commandRecentWorkflowRuns = &command{
 
 var CircleCICommandHandler = Handler{
 	Command: &model.Command{
-		Trigger:          "circleci",
-		Description:      "Integration with CircleCI.",
-		DisplayName:      "CircleCI",
-		AutoComplete:     true,
-		Username:         config.BotUserName,
-		IconURL:          config.BotIconURL,
+		Trigger:      "circleci",
+		Description:  "Integration with CircleCI.",
+		DisplayName:  "CircleCI",
+		AutoComplete: true,
+		Username:     config.BotUserName,
+		IconURL:      config.BotIconURL,
 		AutocompleteData: &model.AutocompleteData{
 			Trigger:  "circleci",
 			HelpText: "interact with CircleCI right from with Mattermost",
@@ -523,10 +589,10 @@ var CircleCICommandHandler = Handler{
 		//"add/vcs":            commandAddVCS.Execute,
 		//"delete/vcs":         commandDeleteVCS.Execute,
 		//"list/vcs":           commandListVCS.Execute,
-		"project-summary":    commandProjectSummary.Execute,
-		"pipeline":           commandGetPipelineByNumber.Execute,
-		"environment":        commandGetEnvironmentVariables.Execute,
-		"workflow-insights":  commandRecentWorkflowRuns.Execute,
+		"project-summary":   commandProjectSummary.Execute,
+		"pipeline":          commandGetPipelineByNumber.Execute,
+		"environment":       commandGetEnvironmentVariables.Execute,
+		"workflow-insights": commandRecentWorkflowRuns.Execute,
 	},
 	defaultHandler: func(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
 		return util.SendEphemeralCommandResponse(invalidCommand)
@@ -641,6 +707,10 @@ func executeDisconnect(context *model.CommandArgs, args ...string) (*model.Comma
 }
 
 func executeListRecentBuilds(ctx *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+	if len(args) < 4 {
+		return util.SendEphemeralCommandResponse("Invalid  syntax. Use this command as `/circleci recent-builds <vcs alias> <org name> <repo name> <workflow name>`")
+	}
+
 	authToken, appErr := config.Mattermost.KVGet(ctx.UserId + "_auth_token")
 	if appErr != nil {
 		return nil, appErr
@@ -785,7 +855,7 @@ func executeBuild(ctx *model.CommandArgs, args ...string) (*model.CommandRespons
 	}
 
 	// we need the auth token
-	if len(args) < 3 {
+	if len(args) < 5 {
 		return util.SendEphemeralCommandResponse("Please specify the account, repo and branch names.")
 	}
 
@@ -993,8 +1063,8 @@ func executeListVCS(context *model.CommandArgs, args ...string) (*model.CommandR
 
 // executeProjectSummary - uses insight API
 func executeProjectSummary(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
-	if len(args) < 1 {
-		return util.SendEphemeralCommandResponse("Incorrect syntax. Use this command as `/circleci project summary <VCS alias> <org> <repo>`")
+	if len(args) < 3 {
+		return util.SendEphemeralCommandResponse("Incorrect syntax. Use this command as `/circleci project-summary <VCS alias> <org> <repo>`")
 	}
 
 	vcsAlias, org, repo := args[0], args[1], args[2]
