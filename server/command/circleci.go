@@ -67,11 +67,19 @@ var commandSubscribe = &command{
 		Arguments: []*model.AutocompleteArg{
 			{
 				HelpText: "VCS Alias",
-				Type:     model.AutocompleteArgTypeText,
+				Type:     model.AutocompleteArgTypeStaticList,
 				Required: true,
-				Data: &model.AutocompleteTextArg{
-					Hint:    "VCS Alias. Use `/circle list vcs` to view available VCS",
-					Pattern: ".+",
+				Data: &model.AutocompleteStaticListArg{
+					PossibleArguments: []model.AutocompleteListItem{
+						{
+							Item:     "github",
+							HelpText: "Use a Github repository",
+						},
+						{
+							Item:     "bitbucket",
+							HelpText: "Use a Bitbucket repository",
+						},
+					},
 				},
 			},
 			{
@@ -105,11 +113,19 @@ var commandUnsubscribe = &command{
 		Arguments: []*model.AutocompleteArg{
 			{
 				HelpText: "VCS Alias",
-				Type:     model.AutocompleteArgTypeText,
+				Type:     model.AutocompleteArgTypeStaticList,
 				Required: true,
-				Data: &model.AutocompleteTextArg{
-					Hint:    "VCS Alias. Use `/circle list vcs` to view available VCS",
-					Pattern: ".+",
+				Data: &model.AutocompleteStaticListArg{
+					PossibleArguments: []model.AutocompleteListItem{
+						{
+							Item:     "github",
+							HelpText: "Use a Github repository",
+						},
+						{
+							Item:     "bitbucket",
+							HelpText: "Use a Bitbucket repository",
+						},
+					},
 				},
 			},
 			{
@@ -337,11 +353,19 @@ var commandProjectSummary = &command{
 		Arguments: []*model.AutocompleteArg{
 			{
 				HelpText: "VCS Alias",
-				Type:     model.AutocompleteArgTypeText,
+				Type:     model.AutocompleteArgTypeStaticList,
 				Required: true,
-				Data: &model.AutocompleteTextArg{
-					Hint:    "VCS Alias",
-					Pattern: ".+",
+				Data: &model.AutocompleteStaticListArg{
+					PossibleArguments: []model.AutocompleteListItem{
+						{
+							Item:     "github",
+							HelpText: "Use a Github repository",
+						},
+						{
+							Item:     "bitbucket",
+							HelpText: "Use a Bitbucket repository",
+						},
+					},
 				},
 			},
 			{
@@ -374,12 +398,20 @@ var commandGetPipelineByNumber = &command{
 		HelpText: "Get details of a pipeline.",
 		Arguments: []*model.AutocompleteArg{
 			{
-				HelpText: "VCS Alias.",
-				Type:     model.AutocompleteArgTypeText,
+				HelpText: "VCS Alias",
+				Type:     model.AutocompleteArgTypeStaticList,
 				Required: true,
-				Data: &model.AutocompleteTextArg{
-					Hint:    "VCS Alias",
-					Pattern: ".+",
+				Data: &model.AutocompleteStaticListArg{
+					PossibleArguments: []model.AutocompleteListItem{
+						{
+							Item:     "github",
+							HelpText: "Use a Github repository",
+						},
+						{
+							Item:     "bitbucket",
+							HelpText: "Use a Bitbucket repository",
+						},
+					},
 				},
 			},
 			{
@@ -422,11 +454,19 @@ var commandGetEnvironmentVariables = &command{
 		Arguments: []*model.AutocompleteArg{
 			{
 				HelpText: "VCS Alias",
-				Type:     model.AutocompleteArgTypeText,
+				Type:     model.AutocompleteArgTypeStaticList,
 				Required: true,
-				Data: &model.AutocompleteTextArg{
-					Hint:    "VCS Alias",
-					Pattern: ".+",
+				Data: &model.AutocompleteStaticListArg{
+					PossibleArguments: []model.AutocompleteListItem{
+						{
+							Item:     "github",
+							HelpText: "Use a Github repository",
+						},
+						{
+							Item:     "bitbucket",
+							HelpText: "Use a Bitbucket repository",
+						},
+					},
 				},
 			},
 			{
@@ -460,11 +500,19 @@ var commandRecentWorkflowRuns = &command{
 		Arguments: []*model.AutocompleteArg{
 			{
 				HelpText: "VCS Alias",
-				Type:     model.AutocompleteArgTypeText,
+				Type:     model.AutocompleteArgTypeStaticList,
 				Required: true,
-				Data: &model.AutocompleteTextArg{
-					Hint:    "VCS Alias",
-					Pattern: ".+",
+				Data: &model.AutocompleteStaticListArg{
+					PossibleArguments: []model.AutocompleteListItem{
+						{
+							Item:     "github",
+							HelpText: "Use a Github repository",
+						},
+						{
+							Item:     "bitbucket",
+							HelpText: "Use a Bitbucket repository",
+						},
+					},
 				},
 			},
 			{
