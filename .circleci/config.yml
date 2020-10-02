@@ -86,7 +86,11 @@ orbs:
       test-failure:
         executor: mattermostexecutor
         steps:
-          - false
+          - run:
+              name: failed command
+              shell: /bin/bash
+              command: |
+                false
           - status
 
 workflows:
