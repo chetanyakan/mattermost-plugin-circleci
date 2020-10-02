@@ -25,9 +25,6 @@ const (
 	BotIconURLSuccess = URLStaticBase + "/circleci_success.png"
 	BotIconURLFailed  = URLStaticBase + "/circeci_failed.png"
 
-	WorkflowSuccessIconURL = URLStaticBase + "/icon_success.png"
-	WorkflowFailedIconURL  = URLStaticBase + "/icon_failed.png"
-
 	// TODO: Configurable retry count
 	KVCompareAndSetMaxRetries = 5
 )
@@ -39,7 +36,8 @@ var (
 )
 
 type Configuration struct {
-	Secret string `json:"Secret"`
+	Secret        string `json:"Secret"`
+	EncryptionKey string `json:"EncryptionKey"`
 }
 
 func GetConfig() *Configuration {
@@ -61,6 +59,10 @@ func (c *Configuration) ProcessConfiguration() error {
 func (c *Configuration) IsValid() error {
 	if c.Secret == "" {
 		return errors.New("please provide the Webhook Secret")
+	}
+
+	if c.EncryptionKey == "" {
+		return errors.New("please provide the Encryption Key")
 	}
 
 	return nil
