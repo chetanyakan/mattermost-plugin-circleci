@@ -1,7 +1,10 @@
 # mattermost-plugin-circleci
 
+![Go Version](https://img.shields.io/github/go-mod/go-version/chetanyakan/mattermost-plugin-circleci)
+[![Go Report Card](https://goreportcard.com/badge/github.com/chetanyakan/mattermost-plugin-circleci)](https://goreportcard.com/report/github.com/chetanyakan/mattermost-plugin-circleci)
 [![Build Status](https://img.shields.io/circleci/project/github/chetanyakan/mattermost-plugin-circleci/master)](https://circleci.com/gh/chetanyakan/mattermost-plugin-circleci)
-[![Release](https://img.shields.io/github/v/release/chetanyakan/mattermost-plugin-circleci)](https://github.com/chetanyakan/mattermost-plugin-circleci/releases/latest)
+[![Release](https://img.shields.io/github/v/release/chetanyakan/mattermost-plugin-circleci?include_prereleases)](https://github.com/chetanyakan/mattermost-plugin-circleci/releases/latest)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fchetanyakan%2Fmattermost-plugin-circleci.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fchetanyakan%2Fmattermost-plugin-circleci?ref=badge_shield)
 
 ### Platform & tools
 
