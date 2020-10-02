@@ -78,11 +78,15 @@ orbs:
                       \"compare_url\":\"$CIRCLE_COMPARE_URL\" \
                     }" << parameters.webhook >>
                 fi
-          - run: echo "Successfully sent the workflow status to Mattermost"
     jobs:
-      mmstatus:
+      test-success:
         executor: mattermostexecutor
         steps:
+          - status
+      test-failure:
+        executor: mattermostexecutor
+        steps:
+          - exit 1
           - status
 
 workflows:
@@ -91,4 +95,5 @@ workflows:
       - plugin-ci/lint
       - plugin-ci/test
       - plugin-ci/build
-      - mattermost/mmstatus
+      - mattermost/test-success
+      - mattermost/test-failure
