@@ -10,14 +10,12 @@ import (
 
 	circleci2 "github.com/TomTucka/go-circleci/circleci"
 	"github.com/antihax/optional"
-	"github.com/dustin/go-humanize"
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/utils"
-
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/config"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/serializer"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/service"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/util"
+	"github.com/dustin/go-humanize"
+	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 const (
@@ -348,7 +346,7 @@ var commandListVCS = &command{
 var commandProjectSummary = &command{
 	Execute: executeProjectSummary,
 	AutocompleteData: &model.AutocompleteData{
-		Trigger:  "project-summary",
+		Trigger:  "project-insight",
 		HelpText: "Show project summary",
 		Arguments: []*model.AutocompleteArg{
 			{
@@ -589,7 +587,7 @@ var CircleCICommandHandler = Handler{
 		//"add/vcs":            commandAddVCS.Execute,
 		//"delete/vcs":         commandDeleteVCS.Execute,
 		//"list/vcs":           commandListVCS.Execute,
-		"project-summary":   commandProjectSummary.Execute,
+		"project-insight":   commandProjectSummary.Execute,
 		"pipeline":          commandGetPipelineByNumber.Execute,
 		"environment":       commandGetEnvironmentVariables.Execute,
 		"workflow-insights": commandRecentWorkflowRuns.Execute,
@@ -729,7 +727,10 @@ func executeListRecentBuilds(ctx *model.CommandArgs, args ...string) (*model.Com
 
 	builds, resp, err := client.InsightsApi.GetProjectWorkflowRuns(
 		nil,
-		fmt.Sprintf("%s/%s/%s", vcs.Type, org, repo), workflow, utils.Yesterday(), utils.Yesterday().Add(2*24*time.Hour),
+		fmt.Sprintf("%s/%s/%s", vcs.Type, org, repo),
+		workflow,
+		time.Now().Add(-24*time.Hour),
+		time.Now(),
 		nil,
 	)
 
@@ -1064,7 +1065,7 @@ func executeListVCS(context *model.CommandArgs, args ...string) (*model.CommandR
 // executeProjectSummary - uses insight API
 func executeProjectSummary(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
 	if len(args) < 3 {
-		return util.SendEphemeralCommandResponse("Incorrect syntax. Use this command as `/circleci project-summary <VCS alias> <org> <repo>`")
+		return util.SendEphemeralCommandResponse("Incorrect syntax. Use this command as `/circleci project-insight <VCS alias> <org> <repo>`")
 	}
 
 	vcsAlias, org, repo := args[0], args[1], args[2]
@@ -1468,8 +1469,8 @@ func executeRecentWorkflowRuns(context *model.CommandArgs, args ...string) (*mod
 		nil,
 		projectSlug,
 		workflowName,
-		utils.Yesterday(),
-		utils.Yesterday().Add(24*time.Hour),
+		time.Now().Add(-24*time.Hour),
+		time.Now(),
 		nil,
 	)
 	if response != nil {
