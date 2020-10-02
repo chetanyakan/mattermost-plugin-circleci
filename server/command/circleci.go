@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	invalidCommand = "Invalid command parameters. Please use `/circleci help` for more information."
+	invalidCommand = "Invalid command parameters. Please check the autocomplete for more information."
 	HeadTypeBranch = "branch"
 	HeadTypeTag    = "tag"
 )
