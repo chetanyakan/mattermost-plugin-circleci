@@ -17,8 +17,6 @@ A CircleCI plugin for Mattermost. Supports CircleCI SaaS.
  - [Configuration](#configuration)
  - [Using the Plugin](#using-the-plugin)
  - [Onboarding Your Users](#onboarding-your-users)
- - [Slash Commands](#slash-commands)
- - [Frequently Asked Questions](#frequently-asked-questions)
  - [Development](#development)
 
 ![GitHub plugin screenshot](images/circleci_mattermost.png)
