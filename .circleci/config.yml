@@ -83,6 +83,11 @@ orbs:
         executor: mattermostexecutor
         steps:
           - status
+      test-failure:
+        executor: mattermostexecutor
+        steps:
+          - false
+          - status
 
 workflows:
   main:
