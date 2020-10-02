@@ -17,6 +17,12 @@ var circleCIBuildFinished = &Endpoint{
 }
 
 func handleCircleCIBuildFinished(w http.ResponseWriter, r *http.Request) {
+	if status, err := verifyHTTPSecret(config.GetConfig().Secret, r.FormValue("secret")); err != nil {
+		config.Mattermost.LogError("Received CircleCI Webhook request but the secret did not match.", "Error", err.Error())
+		http.Error(w, err.Error(), status)
+		return
+	}
+
 	var cwReq serializer.CircleCIWebhookRequest
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&cwReq); err != nil {
