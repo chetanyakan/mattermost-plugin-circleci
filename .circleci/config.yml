@@ -55,7 +55,7 @@ orbs:
                   exit 1
                 else
                   # Webhook properly set.
-                  echo Sending Mattermost Notificaction
+                  echo Sending Mattermost Notification
                   curl -i -X POST \
                     -H 'Content-Type: application/json' \
                     --data \
