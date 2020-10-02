@@ -1,18 +1,30 @@
 package service
 
 import (
+	"encoding/json"
+
+	"github.com/chetanyakan/mattermost-plugin-circleci/server/config"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/serializer"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/store"
 )
 
 func AddSubscription(newSubscription serializer.Subscription) error {
-	subscriptionsList, err := store.GetSubscriptions()
-	if err != nil {
-		subscriptionsList = serializer.NewSubscriptions()
-	}
-	subscriptionsList.Add(newSubscription)
+	err := store.AtomicModify(store.SubscriptionsKey, func(initialBytes []byte) ([]byte, error) {
+		subscriptions, err := serializer.SubscriptionsFromJSON(initialBytes)
+		if err != nil {
+			return nil, err
+		}
 
-	if err := store.SaveSubscriptions(subscriptionsList); err != nil {
+		subscriptions.Add(newSubscription)
+		modifiedBytes, marshalErr := json.Marshal(subscriptions)
+		if marshalErr != nil {
+			return nil, marshalErr
+		}
+		return modifiedBytes, nil
+	})
+
+	if err != nil {
+		config.Mattermost.LogError("Failed to Add subscription.", "Error", err.Error())
 		return err
 	}
 
@@ -20,13 +32,22 @@ func AddSubscription(newSubscription serializer.Subscription) error {
 }
 
 func RemoveSubscription(subscription serializer.Subscription) error {
-	subscriptionsList, err := store.GetSubscriptions()
-	if err != nil {
-		return err
-	}
+	err := store.AtomicModify(store.SubscriptionsKey, func(initialBytes []byte) ([]byte, error) {
+		subscriptions, err := serializer.SubscriptionsFromJSON(initialBytes)
+		if err != nil {
+			return nil, err
+		}
 
-	subscriptionsList.Remove(subscription)
-	if err := store.SaveSubscriptions(subscriptionsList); err != nil {
+		subscriptions.Remove(subscription)
+		modifiedBytes, marshalErr := json.Marshal(subscriptions)
+		if marshalErr != nil {
+			return nil, marshalErr
+		}
+		return modifiedBytes, nil
+	})
+
+	if err != nil {
+		config.Mattermost.LogError("Failed to Remove subscription.", "Error", err.Error())
 		return err
 	}
 
@@ -34,8 +55,15 @@ func RemoveSubscription(subscription serializer.Subscription) error {
 }
 
 func ListSubscriptions(channelID string) ([]serializer.Subscription, error) {
-	subscriptions, err := store.GetSubscriptions()
+	b, err := config.Mattermost.KVGet(store.SubscriptionsKey)
 	if err != nil {
+		config.Mattermost.LogError("failed to get the list of subscriptions", "Error", err.Error())
+		return nil, err
+	}
+
+	subscriptions, appErr := serializer.SubscriptionsFromJSON(b)
+	if appErr != nil {
+		config.Mattermost.LogError("failed to deserialize the list of subscriptions", "Error", appErr.Error())
 		return nil, err
 	}
 

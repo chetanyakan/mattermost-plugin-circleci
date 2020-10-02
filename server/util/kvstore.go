@@ -6,10 +6,9 @@ import (
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/config"
 )
 
-const kvCompareAndSetMaxRetries = 5
-
+// TODO: Refactor add and remove subscriptions to use this util
 func KVCompareAndSet(key string, oldData, newData []byte, updater func(oldData []byte) ([]byte, error)) error {
-	for i := 0; i < kvCompareAndSetMaxRetries; i++ {
+	for i := 0; i < config.KVCompareAndSetMaxRetries; i++ {
 		inserted, appErr := config.Mattermost.KVCompareAndSet(key, oldData, newData)
 		if appErr != nil {
 			return errors.New(appErr.Error())

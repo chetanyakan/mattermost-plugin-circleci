@@ -27,6 +27,9 @@ const (
 
 	WorkflowSuccessIconURL = URLStaticBase + "/icon_success.png"
 	WorkflowFailedIconURL  = URLStaticBase + "/icon_failed.png"
+
+	// TODO: Configurable retry count
+	KVCompareAndSetMaxRetries = 5
 )
 
 var (

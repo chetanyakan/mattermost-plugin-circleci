@@ -1,6 +1,6 @@
 module github.com/chetanyakan/mattermost-plugin-circleci
 
-go 1.13
+go 1.14
 
 require (
 	github.com/TomTucka/go-circleci v1.1.0
@@ -12,3 +12,6 @@ require (
 	github.com/thoas/go-funk v0.7.0
 	go.uber.org/atomic v1.6.0
 )
+
+// To access the TomTucka/go-circleci v2 repo fork
+replace github.com/TomTucka/go-circleci => github.com/chetanyakan/go-circleci v1.1.0

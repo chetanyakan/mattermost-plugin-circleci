@@ -3,19 +3,20 @@ package command
 import (
 	"context"
 	"fmt"
-	"github.com/thoas/go-funk"
 	"net/http"
 	"strings"
 	"time"
 
 	circleci2 "github.com/TomTucka/go-circleci/circleci"
 	"github.com/antihax/optional"
+	"github.com/dustin/go-humanize"
+	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/thoas/go-funk"
+
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/config"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/serializer"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/service"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/util"
-	"github.com/dustin/go-humanize"
-	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 const (
@@ -286,62 +287,62 @@ var commandRecentBuilds = &command{
 	},
 }
 
-var commandAddVCS = &command{
-	Execute: executeAddVCS,
-	AutocompleteData: &model.AutocompleteData{
-		Trigger:  "add vcs",
-		HelpText: "Add new VCS alias",
-		Arguments: []*model.AutocompleteArg{
-			{
-				HelpText: "Name to be used as VCS alias.",
-				Type:     model.AutocompleteArgTypeText,
-				Required: true,
-				Data: &model.AutocompleteTextArg{
-					Hint:    "VCS Alias",
-					Pattern: ".+",
-				},
-			},
-			{
-				HelpText: "Base URL of the VCS. This is the URL you see in CircleCI when viewing a build. For example - `github` is the base URL in `https://app.circleci.com/pipelines/github/foobar`",
-				Type:     model.AutocompleteArgTypeText,
-				Required: true,
-				Data: &model.AutocompleteTextArg{
-					Hint:    "VCS base URL",
-					Pattern: "._+",
-				},
-			},
-		},
-		SubCommands: nil,
-	},
-}
-
-var commandDeleteVCS = &command{
-	Execute: executeDeleteVCS,
-	AutocompleteData: &model.AutocompleteData{
-		Trigger:  "delete vcs",
-		HelpText: "Delete an existing VCS alias",
-		Arguments: []*model.AutocompleteArg{
-			{
-				HelpText: "Name to be used as VCS alias",
-				Type:     model.AutocompleteArgTypeText,
-				Required: true,
-				Data: &model.AutocompleteTextArg{
-					Hint:    "VCS Alias",
-					Pattern: ".+",
-				},
-			},
-		},
-		SubCommands: nil,
-	},
-}
-
-var commandListVCS = &command{
-	Execute: executeListVCS,
-	AutocompleteData: &model.AutocompleteData{
-		Trigger:  "list vcs",
-		HelpText: "List all available VCS.",
-	},
-}
+// var commandAddVCS = &command{
+// 	Execute: executeAddVCS,
+// 	AutocompleteData: &model.AutocompleteData{
+// 		Trigger:  "add vcs",
+// 		HelpText: "Add new VCS alias",
+// 		Arguments: []*model.AutocompleteArg{
+// 			{
+// 				HelpText: "Name to be used as VCS alias.",
+// 				Type:     model.AutocompleteArgTypeText,
+// 				Required: true,
+// 				Data: &model.AutocompleteTextArg{
+// 					Hint:    "VCS Alias",
+// 					Pattern: ".+",
+// 				},
+// 			},
+// 			{
+// 				HelpText: "Base URL of the VCS. This is the URL you see in CircleCI when viewing a build. For example - `github` is the base URL in `https://app.circleci.com/pipelines/github/foobar`",
+// 				Type:     model.AutocompleteArgTypeText,
+// 				Required: true,
+// 				Data: &model.AutocompleteTextArg{
+// 					Hint:    "VCS base URL",
+// 					Pattern: "._+",
+// 				},
+// 			},
+// 		},
+// 		SubCommands: nil,
+// 	},
+// }
+//
+// var commandDeleteVCS = &command{
+// 	Execute: executeDeleteVCS,
+// 	AutocompleteData: &model.AutocompleteData{
+// 		Trigger:  "delete vcs",
+// 		HelpText: "Delete an existing VCS alias",
+// 		Arguments: []*model.AutocompleteArg{
+// 			{
+// 				HelpText: "Name to be used as VCS alias",
+// 				Type:     model.AutocompleteArgTypeText,
+// 				Required: true,
+// 				Data: &model.AutocompleteTextArg{
+// 					Hint:    "VCS Alias",
+// 					Pattern: ".+",
+// 				},
+// 			},
+// 		},
+// 		SubCommands: nil,
+// 	},
+// }
+//
+// var commandListVCS = &command{
+// 	Execute: executeListVCS,
+// 	AutocompleteData: &model.AutocompleteData{
+// 		Trigger:  "list vcs",
+// 		HelpText: "List all available VCS.",
+// 	},
+// }
 
 var commandProjectSummary = &command{
 	Execute: executeProjectSummary,
@@ -547,7 +548,7 @@ var commandRecentWorkflowRuns = &command{
 
 var CircleCICommandHandler = Handler{
 	Command: &model.Command{
-		Trigger:      "circleci",
+		Trigger:      config.CommandPrefix,
 		Description:  "Integration with CircleCI.",
 		DisplayName:  "CircleCI",
 		AutoComplete: true,
@@ -669,7 +670,7 @@ func executeListSubscriptions(context *model.CommandArgs, args ...string) (*mode
 	return util.SendEphemeralCommandResponse(message)
 }
 
-func executeConnect(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+func executeConnect(ctx *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
 	// we need the auth token
 	if len(args) < 1 {
 		return util.SendEphemeralCommandResponse("Please specify the auth token.")
@@ -679,7 +680,7 @@ func executeConnect(context *model.CommandArgs, args ...string) (*model.CommandR
 	conf := circleci2.NewConfiguration()
 	conf.AddDefaultHeader("Circle-Token", authToken)
 
-	if err := config.Mattermost.KVSet(context.UserId+"_auth_token", []byte(authToken)); err != nil {
+	if err := config.Mattermost.KVSet(ctx.UserId+"_auth_token", []byte(authToken)); err != nil {
 		config.Mattermost.LogError("Unable to save auth token to KVStore. Error: " + err.Error())
 		return nil, err
 	}
@@ -687,8 +688,8 @@ func executeConnect(context *model.CommandArgs, args ...string) (*model.CommandR
 	return util.SendEphemeralCommandResponse("Successfully saved auth token.")
 }
 
-func executeDisconnect(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
-	authToken, appErr := config.Mattermost.KVGet(context.UserId + "_auth_token")
+func executeDisconnect(ctx *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+	authToken, appErr := config.Mattermost.KVGet(ctx.UserId + "_auth_token")
 	if appErr != nil {
 		return nil, appErr
 	}
@@ -696,7 +697,7 @@ func executeDisconnect(context *model.CommandArgs, args ...string) (*model.Comma
 		return util.SendEphemeralCommandResponse("Not connected. Please connect and try again later.")
 	}
 
-	if err := config.Mattermost.KVDelete(context.UserId + "_auth_token"); err != nil {
+	if err := config.Mattermost.KVDelete(ctx.UserId + "_auth_token"); err != nil {
 		config.Mattermost.LogError("Unable to disconnect. Error: " + err.Error())
 		return nil, err
 	}
@@ -726,7 +727,7 @@ func executeListRecentBuilds(ctx *model.CommandArgs, args ...string) (*model.Com
 	}
 
 	builds, resp, err := client.InsightsApi.GetProjectWorkflowRuns(
-		nil,
+		context.TODO(),
 		fmt.Sprintf("%s/%s/%s", vcs.Type, org, repo),
 		workflow,
 		time.Now().Add(-24*time.Hour),
@@ -881,7 +882,7 @@ func executeBuild(ctx *model.CommandArgs, args ...string) (*model.CommandRespons
 		return util.SendEphemeralCommandResponse(fmt.Sprintf("Invalid head type. Please specify one of `%s` or `%s`", HeadTypeBranch, HeadTypeTag))
 	}
 
-	build, response, err := client.PipelineApi.TriggerPipeline(nil, vcs.Type+"/"+org+"/"+repo, &circleci2.PipelineApiTriggerPipelineOpts{
+	build, response, err := client.PipelineApi.TriggerPipeline(context.TODO(), vcs.Type+"/"+org+"/"+repo, &circleci2.PipelineApiTriggerPipelineOpts{
 		Body: optional.NewInterface(body),
 	})
 
@@ -971,99 +972,99 @@ func executeBuild(ctx *model.CommandArgs, args ...string) (*model.CommandRespons
 	}, nil
 }
 
-func executeAddVCS(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
-	config.Mattermost.LogInfo(fmt.Sprintf("%v", args))
-	if len(args) < 3 {
-		return util.SendEphemeralCommandResponse("Invalid number of arguments. Use this command as `/cirecleci add vcs [github | bitbucket] [alias] [base URL]`")
-	}
-
-	vcsType, alias, baseURL := args[0], args[1], args[2]
-
-	existingVCS, err := service.GetVCS(alias)
-	if err != nil {
-		return util.SendEphemeralCommandResponse(
-			"Failed to check for existing VCS with same alias. Please try again later. If the problem persists, contact your system administrator.",
-		)
-	}
-
-	if existingVCS != nil {
-		return util.SendEphemeralCommandResponse(fmt.Sprintf("Another VCS existis with the same alias. Please delete existing VCS first if you want to update it. Alias: `%s`, base URL: `%s`", existingVCS.Alias, existingVCS.BaseURL))
-	}
-
-	vcs := &serializer.VCS{
-		Alias:   alias,
-		BaseURL: baseURL,
-		Type:    vcsType,
-	}
-
-	if err := service.AddVCS(vcs); err != nil {
-		return util.SendEphemeralCommandResponse("Failed to save VCS. Please try again later. If the problem persists, contact your system administrator.")
-	}
-
-	message := fmt.Sprintf("Successfully added VCS with alias `%s` and base URL `%s`", vcs.Alias, vcs.BaseURL)
-
-	_, _ = config.Mattermost.CreatePost(&model.Post{
-		UserId:    config.BotUserID,
-		ChannelId: context.ChannelId,
-		Message:   message,
-	})
-
-	return &model.CommandResponse{}, nil
-}
-
-func executeDeleteVCS(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
-	if len(args) < 1 {
-		return util.SendEphemeralCommandResponse("Invalid number of arguments. Use this command as `/cirecleci delete vcs [alias]`")
-	}
-
-	alias := args[0]
-
-	existingVCS, err := service.GetVCS(alias)
-	if err != nil {
-		return util.SendEphemeralCommandResponse("Failed to check VCS. Please try again later. If the problem persists, contact your system administrator.")
-	}
-
-	if existingVCS == nil {
-		return util.SendEphemeralCommandResponse("No VCS exists with provided alias.")
-	}
-
-	if err := service.DeleteVCS(alias); err != nil {
-		return util.SendEphemeralCommandResponse("Failed to delete VCS. Please try again later. If the problem persists, contact your system administrator.")
-	}
-
-	message := fmt.Sprintf("Successfully deleted VCS with alias `%s`", alias)
-
-	_, _ = config.Mattermost.CreatePost(&model.Post{
-		UserId:    config.BotUserID,
-		ChannelId: context.ChannelId,
-		Message:   message,
-	})
-
-	return &model.CommandResponse{}, nil
-}
-
-func executeListVCS(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
-	vcsList, err := service.GetVCSList()
-	if err != nil {
-		return util.SendEphemeralCommandResponse("Failed to fetch list of VCS. Please try again later. If the problem persists, contact your system administrator.")
-	}
-
-	message := "Available VCS -\n\n| No.  | Type | Alias | Base URL |\n|:------------|:------------|:------------|:------------|\n"
-	for i, vcs := range vcsList {
-		message += fmt.Sprintf("|%d|%s|%s|%s|\n", i+1, vcs.Type, vcs.Alias, vcs.BaseURL)
-	}
-
-	_, _ = config.Mattermost.CreatePost(&model.Post{
-		UserId:    config.BotUserID,
-		ChannelId: context.ChannelId,
-		Message:   message,
-	})
-
-	return &model.CommandResponse{}, nil
-}
+// func executeAddVCS(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+// 	config.Mattermost.LogInfo(fmt.Sprintf("%v", args))
+// 	if len(args) < 3 {
+// 		return util.SendEphemeralCommandResponse("Invalid number of arguments. Use this command as `/circleci add vcs [github | bitbucket] [alias] [base URL]`")
+// 	}
+//
+// 	vcsType, alias, baseURL := args[0], args[1], args[2]
+//
+// 	existingVCS, err := service.GetVCS(alias)
+// 	if err != nil {
+// 		return util.SendEphemeralCommandResponse(
+// 			"Failed to check for existing VCS with same alias. Please try again later. If the problem persists, contact your system administrator.",
+// 		)
+// 	}
+//
+// 	if existingVCS != nil {
+// 		return util.SendEphemeralCommandResponse(fmt.Sprintf("Another VCS exists with the same alias. Please delete existing VCS first if you want to update it. Alias: `%s`, base URL: `%s`", existingVCS.Alias, existingVCS.BaseURL))
+// 	}
+//
+// 	vcs := &serializer.VCS{
+// 		Alias:   alias,
+// 		BaseURL: baseURL,
+// 		Type:    vcsType,
+// 	}
+//
+// 	if err := service.AddVCS(vcs); err != nil {
+// 		return util.SendEphemeralCommandResponse("Failed to save VCS. Please try again later. If the problem persists, contact your system administrator.")
+// 	}
+//
+// 	message := fmt.Sprintf("Successfully added VCS with alias `%s` and base URL `%s`", vcs.Alias, vcs.BaseURL)
+//
+// 	_, _ = config.Mattermost.CreatePost(&model.Post{
+// 		UserId:    config.BotUserID,
+// 		ChannelId: context.ChannelId,
+// 		Message:   message,
+// 	})
+//
+// 	return &model.CommandResponse{}, nil
+// }
+//
+// func executeDeleteVCS(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+// 	if len(args) < 1 {
+// 		return util.SendEphemeralCommandResponse("Invalid number of arguments. Use this command as `/circleci delete vcs [alias]`")
+// 	}
+//
+// 	alias := args[0]
+//
+// 	existingVCS, err := service.GetVCS(alias)
+// 	if err != nil {
+// 		return util.SendEphemeralCommandResponse("Failed to check VCS. Please try again later. If the problem persists, contact your system administrator.")
+// 	}
+//
+// 	if existingVCS == nil {
+// 		return util.SendEphemeralCommandResponse("No VCS exists with provided alias.")
+// 	}
+//
+// 	if err := service.DeleteVCS(alias); err != nil {
+// 		return util.SendEphemeralCommandResponse("Failed to delete VCS. Please try again later. If the problem persists, contact your system administrator.")
+// 	}
+//
+// 	message := fmt.Sprintf("Successfully deleted VCS with alias `%s`", alias)
+//
+// 	_, _ = config.Mattermost.CreatePost(&model.Post{
+// 		UserId:    config.BotUserID,
+// 		ChannelId: context.ChannelId,
+// 		Message:   message,
+// 	})
+//
+// 	return &model.CommandResponse{}, nil
+// }
+//
+// func executeListVCS(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+// 	vcsList, err := service.GetVCSList()
+// 	if err != nil {
+// 		return util.SendEphemeralCommandResponse("Failed to fetch list of VCS. Please try again later. If the problem persists, contact your system administrator.")
+// 	}
+//
+// 	message := "Available VCS -\n\n| No.  | Type | Alias | Base URL |\n|:------------|:------------|:------------|:------------|\n"
+// 	for i, vcs := range vcsList {
+// 		message += fmt.Sprintf("|%d|%s|%s|%s|\n", i+1, vcs.Type, vcs.Alias, vcs.BaseURL)
+// 	}
+//
+// 	_, _ = config.Mattermost.CreatePost(&model.Post{
+// 		UserId:    config.BotUserID,
+// 		ChannelId: context.ChannelId,
+// 		Message:   message,
+// 	})
+//
+// 	return &model.CommandResponse{}, nil
+// }
 
 // executeProjectSummary - uses insight API
-func executeProjectSummary(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+func executeProjectSummary(ctx *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
 	if len(args) < 3 {
 		return util.SendEphemeralCommandResponse("Incorrect syntax. Use this command as `/circleci project-insight <VCS alias> <org> <repo>`")
 	}
@@ -1074,7 +1075,7 @@ func executeProjectSummary(context *model.CommandArgs, args ...string) (*model.C
 		return util.SendEphemeralCommandResponse("Failed to get VCS details. Please try again later. If the problem persists, contact your system administrator.")
 	}
 
-	authToken, appErr := config.Mattermost.KVGet(context.UserId + "_auth_token")
+	authToken, appErr := config.Mattermost.KVGet(ctx.UserId + "_auth_token")
 	if appErr != nil {
 		return nil, appErr
 	}
@@ -1083,7 +1084,7 @@ func executeProjectSummary(context *model.CommandArgs, args ...string) (*model.C
 	}
 	client := util.GetCircleciClient(string(authToken))
 
-	insights, response, err := client.InsightsApi.GetProjectWorkflowMetrics(nil, fmt.Sprintf("%s/%s/%s", vcs.Type, org, repo), nil)
+	insights, response, err := client.InsightsApi.GetProjectWorkflowMetrics(context.TODO(), fmt.Sprintf("%s/%s/%s", vcs.Type, org, repo), nil)
 	if err != nil {
 		config.Mattermost.LogError(fmt.Sprintf(
 			"Failed to fetch project summary. Project slug: %s, error: %s",
@@ -1102,7 +1103,7 @@ func executeProjectSummary(context *model.CommandArgs, args ...string) (*model.C
 
 	post := &model.Post{
 		UserId:    config.BotUserID,
-		ChannelId: context.ChannelId,
+		ChannelId: ctx.ChannelId,
 	}
 
 	attachments := make([]*model.SlackAttachment, len(insights.Items))
@@ -1201,7 +1202,7 @@ func executeProjectSummary(context *model.CommandArgs, args ...string) (*model.C
 }
 
 // executeGetPipelineByNumber - uses pipeline API
-func executeGetPipelineByNumber(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+func executeGetPipelineByNumber(ctx *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
 	if len(args) < 4 {
 		return util.SendEphemeralCommandResponse("Incorrect syntax. Use this command as `/circleci pipeline <vcs alias> <org> <repo> <pipeline number>`")
 	}
@@ -1213,7 +1214,7 @@ func executeGetPipelineByNumber(context *model.CommandArgs, args ...string) (*mo
 		return util.SendEphemeralCommandResponse("Failed to get VCS details. Please try again later. If the problem persists, contact your system administrator.")
 	}
 
-	authToken, appErr := config.Mattermost.KVGet(context.UserId + "_auth_token")
+	authToken, appErr := config.Mattermost.KVGet(ctx.UserId + "_auth_token")
 	if appErr != nil {
 		return nil, appErr
 	}
@@ -1223,7 +1224,7 @@ func executeGetPipelineByNumber(context *model.CommandArgs, args ...string) (*mo
 	}
 
 	client := util.GetCircleciClient(string(authToken))
-	pipeline, pipelineResponse, err := client.PipelineApi.GetPipelineByNumber(nil, fmt.Sprintf("%s/%s/%s", vcs.Type, org, repo), pipelineNumber)
+	pipeline, pipelineResponse, err := client.PipelineApi.GetPipelineByNumber(context.TODO(), fmt.Sprintf("%s/%s/%s", vcs.Type, org, repo), pipelineNumber)
 
 	if pipelineResponse != nil {
 		defer pipelineResponse.Body.Close()
@@ -1242,7 +1243,7 @@ func executeGetPipelineByNumber(context *model.CommandArgs, args ...string) (*mo
 		return util.SendEphemeralCommandResponse("Failed to get pipeline details. Please try again later. If the problem persists, contact your system administrator.")
 	}
 
-	workflows, workflowResponse, err := client.PipelineApi.ListWorkflowsByPipelineId(nil, pipeline.Id, nil)
+	workflows, workflowResponse, err := client.PipelineApi.ListWorkflowsByPipelineId(context.TODO(), pipeline.Id, nil)
 
 	if workflowResponse != nil {
 		defer workflowResponse.Body.Close()
@@ -1264,8 +1265,7 @@ func executeGetPipelineByNumber(context *model.CommandArgs, args ...string) (*mo
 	jobsByWorkflow := map[circleci2.Workflow1]circleci2.WorkflowJobListResponse{}
 
 	for i, workflow := range workflows.Items {
-		jobs, _, err := client.WorkflowApi.ListWorkflowJobs(nil, workflow.Id)
-
+		jobs, resp, err := client.WorkflowApi.ListWorkflowJobs(context.TODO(), workflow.Id)
 		if err != nil {
 			config.Mattermost.LogError(fmt.Sprintf(
 				"Failed to get workflow's job. VCS: %s, org: %s, repo: %s, pipeline ID: %s, workflow ID: %s, error: %s",
@@ -1278,6 +1278,9 @@ func executeGetPipelineByNumber(context *model.CommandArgs, args ...string) (*mo
 			))
 
 			return util.SendEphemeralCommandResponse("Failed to get workflow's jobs. Please try again later. If the problem persists, contact your system administrator.")
+		}
+		if resp != nil {
+			defer resp.Body.Close()
 		}
 
 		jobsByWorkflow[workflows.Items[i]] = jobs
@@ -1364,7 +1367,7 @@ func executeGetPipelineByNumber(context *model.CommandArgs, args ...string) (*mo
 
 	post := &model.Post{
 		UserId:    config.BotUserID,
-		ChannelId: context.ChannelId,
+		ChannelId: ctx.ChannelId,
 	}
 
 	model.ParseSlackAttachment(post, []*model.SlackAttachment{attachment})
@@ -1376,7 +1379,7 @@ func executeGetPipelineByNumber(context *model.CommandArgs, args ...string) (*mo
 			org,
 			repo,
 			pipeline.Id,
-			context.ChannelId,
+			ctx.ChannelId,
 			appErr.Error(),
 		))
 
@@ -1387,7 +1390,7 @@ func executeGetPipelineByNumber(context *model.CommandArgs, args ...string) (*mo
 }
 
 // executeGetAllEnvironmentVariables - uses project API
-func executeGetAllEnvironmentVariables(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+func executeGetAllEnvironmentVariables(ctx *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
 	if len(args) < 3 {
 		return util.SendEphemeralCommandResponse("Incorrect syntax. Use this command as `/circleci env vars <vcs alias> <org> <repo>`")
 	}
@@ -1399,7 +1402,7 @@ func executeGetAllEnvironmentVariables(context *model.CommandArgs, args ...strin
 		return util.SendEphemeralCommandResponse("Failed to get VCS details. Please try again later. If the problem persists, contact your system administrator.")
 	}
 
-	authToken, appErr := config.Mattermost.KVGet(context.UserId + "_auth_token")
+	authToken, appErr := config.Mattermost.KVGet(ctx.UserId + "_auth_token")
 	if appErr != nil {
 		return nil, appErr
 	}
@@ -1411,7 +1414,12 @@ func executeGetAllEnvironmentVariables(context *model.CommandArgs, args ...strin
 	client := util.GetCircleciClient(string(authToken))
 	projectSlug := fmt.Sprintf("%s/%s/%s", vcs.Type, org, repo)
 
-	envVars, response, err := client.ProjectApi.ListEnvVars(nil, projectSlug)
+	envVars, response, err := client.ProjectApi.ListEnvVars(context.TODO(), projectSlug)
+	if err != nil {
+		config.Mattermost.LogError(fmt.Sprintf("Could not fetch the list of Env Vars. Channel ID: %s, error: %s", ctx.ChannelId, appErr.Error()))
+		return util.SendEphemeralCommandResponse("Could not fetch the list of Env Vars. Please make sure your CircleCI Auth Token is still valid and try again.")
+	}
+
 	if response != nil {
 		defer response.Body.Close()
 	}
@@ -1430,18 +1438,18 @@ func executeGetAllEnvironmentVariables(context *model.CommandArgs, args ...strin
 
 	post := &model.Post{
 		UserId:    config.BotUserID,
-		ChannelId: context.ChannelId,
+		ChannelId: ctx.ChannelId,
 	}
 	model.ParseSlackAttachment(post, []*model.SlackAttachment{attachment})
 	if _, appErr := config.Mattermost.CreatePost(post); appErr != nil {
-		config.Mattermost.LogError(fmt.Sprintf("Could not post environment variable post. Channel ID: %s, error: %s", context.ChannelId, appErr.Error()))
+		config.Mattermost.LogError(fmt.Sprintf("Could not post environment variable post. Channel ID: %s, error: %s", ctx.ChannelId, appErr.Error()))
 		return util.SendEphemeralCommandResponse("Could not create post. Please try again later. If the problem persists, contact your system administrator.")
 	}
 
 	return &model.CommandResponse{}, nil
 }
 
-func executeRecentWorkflowRuns(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+func executeRecentWorkflowRuns(ctx *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
 	if len(args) < 4 {
 		return util.SendEphemeralCommandResponse("Incorrect syntax. Use this command as `/circleci workflow-insights <vcs alias> <org> <repo> <workflow name>`")
 	}
@@ -1453,7 +1461,7 @@ func executeRecentWorkflowRuns(context *model.CommandArgs, args ...string) (*mod
 		return util.SendEphemeralCommandResponse("Failed to get VCS details. Please try again later. If the problem persists, contact your system administrator.")
 	}
 
-	authToken, appErr := config.Mattermost.KVGet(context.UserId + "_auth_token")
+	authToken, appErr := config.Mattermost.KVGet(ctx.UserId + "_auth_token")
 	if appErr != nil {
 		return nil, appErr
 	}
@@ -1466,7 +1474,7 @@ func executeRecentWorkflowRuns(context *model.CommandArgs, args ...string) (*mod
 	projectSlug := fmt.Sprintf("%s/%s/%s", vcs.Type, org, repo)
 
 	workflowRuns, response, err := client.InsightsApi.GetProjectWorkflowRuns(
-		nil,
+		context.TODO(),
 		projectSlug,
 		workflowName,
 		time.Now().Add(-24*time.Hour),
@@ -1541,12 +1549,12 @@ func executeRecentWorkflowRuns(context *model.CommandArgs, args ...string) (*mod
 
 		post := &model.Post{
 			UserId:    config.BotUserID,
-			ChannelId: context.ChannelId,
+			ChannelId: ctx.ChannelId,
 		}
 
 		model.ParseSlackAttachment(post, attachments)
 		if _, err := config.Mattermost.CreatePost(post); err != nil {
-			config.Mattermost.LogError(fmt.Sprintf("Failed to create post for recent workflows. ChannelID: %s, error: %s", context.ChannelId, err.Error()))
+			config.Mattermost.LogError(fmt.Sprintf("Failed to create post for recent workflows. ChannelID: %s, error: %s", ctx.ChannelId, err.Error()))
 			return util.SendEphemeralCommandResponse("Failed to create post. Please try again later. If the problem persists, contact your system administrator.")
 		}
 	}

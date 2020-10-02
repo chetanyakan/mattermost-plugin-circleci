@@ -1,6 +1,10 @@
 package serializer
 
-import "github.com/thoas/go-funk"
+import (
+	"encoding/json"
+
+	"github.com/thoas/go-funk"
+)
 
 type StringSubscription map[string]Subscription
 
@@ -14,6 +18,19 @@ func NewSubscriptions() *Subscriptions {
 		ByChannelID: map[string]StringSubscription{},
 		ByKey:       map[string][]string{},
 	}
+}
+
+func SubscriptionsFromJSON(bytes []byte) (*Subscriptions, error) {
+	var subs *Subscriptions
+	if len(bytes) != 0 {
+		unmarshalErr := json.Unmarshal(bytes, &subs)
+		if unmarshalErr != nil {
+			return nil, unmarshalErr
+		}
+	} else {
+		subs = NewSubscriptions()
+	}
+	return subs, nil
 }
 
 // Add adds a new subscription to the list of all subscriptions
