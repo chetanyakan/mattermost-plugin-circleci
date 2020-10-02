@@ -975,7 +975,7 @@ func executeBuild(ctx *model.CommandArgs, args ...string) (*model.CommandRespons
 // func executeAddVCS(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
 // 	config.Mattermost.LogInfo(fmt.Sprintf("%v", args))
 // 	if len(args) < 3 {
-// 		return util.SendEphemeralCommandResponse("Invalid number of arguments. Use this command as `/cirecleci add vcs [github | bitbucket] [alias] [base URL]`")
+// 		return util.SendEphemeralCommandResponse("Invalid number of arguments. Use this command as `/circleci add vcs [github | bitbucket] [alias] [base URL]`")
 // 	}
 //
 // 	vcsType, alias, baseURL := args[0], args[1], args[2]
@@ -988,7 +988,7 @@ func executeBuild(ctx *model.CommandArgs, args ...string) (*model.CommandRespons
 // 	}
 //
 // 	if existingVCS != nil {
-// 		return util.SendEphemeralCommandResponse(fmt.Sprintf("Another VCS existis with the same alias. Please delete existing VCS first if you want to update it. Alias: `%s`, base URL: `%s`", existingVCS.Alias, existingVCS.BaseURL))
+// 		return util.SendEphemeralCommandResponse(fmt.Sprintf("Another VCS exists with the same alias. Please delete existing VCS first if you want to update it. Alias: `%s`, base URL: `%s`", existingVCS.Alias, existingVCS.BaseURL))
 // 	}
 //
 // 	vcs := &serializer.VCS{
@@ -1014,7 +1014,7 @@ func executeBuild(ctx *model.CommandArgs, args ...string) (*model.CommandRespons
 //
 // func executeDeleteVCS(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
 // 	if len(args) < 1 {
-// 		return util.SendEphemeralCommandResponse("Invalid number of arguments. Use this command as `/cirecleci delete vcs [alias]`")
+// 		return util.SendEphemeralCommandResponse("Invalid number of arguments. Use this command as `/circleci delete vcs [alias]`")
 // 	}
 //
 // 	alias := args[0]
