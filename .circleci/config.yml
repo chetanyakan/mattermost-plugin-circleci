@@ -1,105 +1,94 @@
-version: 2.0
-jobs:
-  build:
-    docker:
-      - image: circleci/golang:1.13-node
-    working_directory: /go/src/github.com/chetanyakan/mattermost-plugin-circleci
-    steps:
-      - checkout
+version: 2.1
 
-      - restore_cache:
-          name: Restore go modules cache
-          key: go-mod-v1-{{ checksum "go.sum" }}
-      - restore_cache:
-          name: Restore golangci-lint cache
-          keys: [ 'v1-golangci-lint-{{ arch }}-1.31.0' ]
+orbs:
+  plugin-ci: mattermost/plugin-ci@volatile
+  mattermost:
+    description: Easily integrate custom Mattermost notifications into your CircleCI projects.
+    executors:
+      mattermostexecutor:
+        resource_class: small
+        docker:
+          - image: cibuilds/base:latest
+            environment:
+              TERM: dumb
+    orbs:
+      plugin-ci: mattermost/plugin-ci@volatile
+    commands:
+      status:
+        description: >
+          Notify Mattermost at the end of a job based on success or failure.
+          Must be the last step in a job.
+        parameters:
+          webhook:
+            description: Enter either your Webhook value or use the CircleCI UI to add your token under the 'WEBHOOK_URL' env var
+            type: string
+            default: ${WEBHOOK_URL}
+        steps:
+          - run:
+              name: Set Failure Condition
+              command: |
+                echo 'export MM_BUILD_STATUS="failure"' >> $BASH_ENV
+              when: on_fail
 
-      - run:
-          name: Install golangci-lint
-          command: |
-            mkdir -p /go/bin
-            command -v /go/bin/golangci-lint && exit
-            download=https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh
-            wget -O- -q $download | sh -s -- -b /go/bin/ v1.31.0
+          - run:
+              name: Set Success Condition
+              command: |
+                echo 'export MM_BUILD_STATUS="success"' >> $BASH_ENV
+              when: on_success
 
-      - type: shell
-        name: 'Checks the code style, tests, builds and bundles the plugin.'
-        command: make all
-        environment:
-          TERM: dumb
+          - run:
+              name: Provide error if non-bash shell
+              command: |
+                if [ ! -x /bin/bash ]; then
+                  echo Bash not installed.
+                  exit 1
+                fi
 
-      - save_cache:
-          name: Save go modules cache
-          key: go-mod-v1-{{ checksum "go.sum" }}
-          paths:
-            - "/go/pkg/mod"
-      - save_cache:
-          name: Save golangci-lint cache
-          key: 'v1-golangci-lint-{{ arch }}-1.31.0'
-          paths: [ /go/bin/golangci-lint ]
-
-      - store_artifacts:
-          path: ./dist
-          destination: build
-
-      - persist_to_workspace:
-          root: .
-          paths:
-            - dist
-
-      - run:
-          name: Notification Fail
-          when: on_fail
-          command: >
-            curl --header "Content-Type: application/json"
-            --request POST
-            --data "{\"channel_id\":\"$CHANNEL_ID\",\"status\":\"failure\",\"build_num\":\"$CIRCLE_BUILD_NUM\",\"repo_name\":\"$CIRCLE_PROJECT_REPONAME\",\"tag\":\"$CIRCLE_TAG\",\"commit\":\"$CIRCLE_SHA1\",\"build_url\":\"$CIRCLE_BUILD_URL\",\"org_name\":\"$CIRCLE_PROJECT_USERNAME\",\"branch\":\"$CIRCLE_BRANCH\",\"username\":\"$CIRCLE_USERNAME\",\"pull_request\":\"$CIRCLE_PULL_REQUEST\",\"job\":\"$CIRCLE_JOB\",\"workflow_id\":\"$CIRCLE_WORKFLOW_ID\",\"compare_url\":\"$CIRCLE_COMPARE_URL\"}"
-            $WEBHOOK_URL
-      - run:
-          name: Notification Success
-          when: on_success
-          command: >
-            curl --header "Content-Type: application/json"
-            --request POST
-            --data "{\"channel_id\":\"$CHANNEL_ID\",\"status\":\"success\",\"build_num\":\"$CIRCLE_BUILD_NUM\",\"repo_name\":\"$CIRCLE_PROJECT_REPONAME\",\"tag\":\"$CIRCLE_TAG\",\"commit\":\"$CIRCLE_SHA1\",\"build_url\":\"$CIRCLE_BUILD_URL\",\"org_name\":\"$CIRCLE_PROJECT_USERNAME\",\"branch\":\"$CIRCLE_BRANCH\",\"username\":\"$CIRCLE_USERNAME\",\"pull_request\":\"$CIRCLE_PULL_REQUEST\",\"job\":\"$CIRCLE_JOB\",\"workflow_id\":\"$CIRCLE_WORKFLOW_ID\",\"compare_url\":\"$CIRCLE_COMPARE_URL\"}"
-            $WEBHOOK_URL
-
-  release:
-    docker:
-      - image: cibuilds/github:0.12
-    working_directory: /go/src/github.com/chetanyakan/mattermost-plugin-circleci
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run:
-          name: "Publish Release on GitHub"
-          command: |
-            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${CIRCLE_TAG} dist/
+          - run:
+              name: Mattermost Notification
+              shell: /bin/bash
+              command: |
+                # Provide error if no webhook is set and error. Otherwise continue
+                if [ -z "<< parameters.webhook >>" ]; then
+                  echo "No Mattermost WEBHOOK_URL Set"
+                  echo "Please input your WEBHOOK_URL value either in the settings for this project, or as a parameter for this orb."
+                  exit 1
+                else
+                  # Webhook properly set.
+                  echo Sending Mattermost Notifiaction
+                  curl -i -X POST \
+                    -H 'Content-Type: application/json' \
+                    --data \
+                    "{ \
+                      \"status\":\"$MM_BUILD_STATUS\", \
+                      \"build_url\": \"$CIRCLE_BUILD_URL\", \
+                      \"repo_url\": \"$CIRCLE_REPOSITORY_URL\", \
+                      \"repo_name\":\"$CIRCLE_PROJECT_REPONAME\", \
+                      \"build_num\":\"$CIRCLE_BUILD_NUM\", \
+                      \"tag\":\"$CIRCLE_TAG\", \
+                      \"commit\":\"$CIRCLE_SHA1\", \
+                      \"build_url\":\"$CIRCLE_BUILD_URL\", \
+                      \"org_name\":\"$CIRCLE_PROJECT_USERNAME\", \
+                      \"branch\":\"$CIRCLE_BRANCH\", \
+                      \"username\":\"$CIRCLE_USERNAME\", \
+                      \"pull_request\":\"$CIRCLE_PULL_REQUEST\", \
+                      \"job_name\":\"$CIRCLE_JOB\", \
+                      \"workflow_id\":\"$CIRCLE_WORKFLOW_ID\", \
+                      \"pipeline_number\": \"$CIRCLE_PIPELINE_NUMBER\", \
+                      \"compare_url\":\"$CIRCLE_COMPARE_URL\" \
+                    }" << parameters.webhook >>
+                fi
+          - run: echo "Successfully sent the workflow status to Mattermost"
+    jobs:
+      mmstatus:
+        executor: mattermostexecutor
+        steps:
+          - status
 
 workflows:
-  version: 2
-  build:
+  main:
     jobs:
-      - build:
-          filters:
-            branches:
-              only: /.*/
-            tags:
-              ignore: /.*/
-  build-and-release:
-    jobs:
-      - build:
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /.*/
-      - release:
-          requires:
-            - build
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /.*/
+      - plugin-ci/lint
+      - plugin-ci/test
+      - plugin-ci/build
+      - mattermost/mmstatus

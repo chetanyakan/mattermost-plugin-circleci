@@ -7,22 +7,9 @@ import (
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/store"
 )
 
-var (
-	defaultVCSList = map[string]*serializer.VCS{
-		"github": {
-			Alias:   serializer.VCSTypeGithub,
-			BaseURL: "https://github.com",
-		},
-		"bitbucket": {
-			Alias:   serializer.VCSTypeBitbucket,
-			BaseURL: "https://bitbucket.org",
-		},
-	}
-)
-
 func GetVCS(alias string) (*serializer.VCS, error) {
 	// first we check for default VCS, then in custom VCS
-	if vcs, found := defaultVCSList[alias]; found {
+	if vcs, found := serializer.DefaultVCSList[alias]; found {
 		return vcs, nil
 	}
 
@@ -35,7 +22,7 @@ func GetVCS(alias string) (*serializer.VCS, error) {
 }
 
 func AddVCS(vcs *serializer.VCS) error {
-	if _, exists := defaultVCSList[vcs.Alias]; exists {
+	if _, exists := serializer.DefaultVCSList[vcs.Alias]; exists {
 		return errors.New("VCS alias already exists")
 	}
 
@@ -43,7 +30,7 @@ func AddVCS(vcs *serializer.VCS) error {
 }
 
 func DeleteVCS(alias string) error {
-	if _, exists := defaultVCSList[alias]; exists {
+	if _, exists := serializer.DefaultVCSList[alias]; exists {
 		return errors.New("specified VCS is a system VCS and cannot be deleted")
 	}
 
@@ -56,7 +43,7 @@ func GetVCSList() ([]*serializer.VCS, error) {
 		return nil, err
 	}
 
-	for _, systemVCS := range defaultVCSList {
+	for _, systemVCS := range serializer.DefaultVCSList {
 		vcsList = append(vcsList, systemVCS)
 	}
 

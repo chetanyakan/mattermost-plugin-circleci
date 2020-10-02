@@ -2,6 +2,7 @@ package serializer
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
@@ -9,27 +10,35 @@ import (
 )
 
 type CircleCIWebhookRequest struct {
-	Status      string `json:"status"`
-	BuildNum    string `json:"build_num"`
-	RepoName    string `json:"repo_name"`
-	Tag         string `json:"tag"`
-	Commit      string `json:"commit"`
-	BuildURL    string `json:"build_url"`
-	CompareURL  string `json:"compare_url"`
-	VCSType     string `json:"vcs_type"`
-	VCSBaseURL  string `json:"vcs_base_url"`
-	OrgName     string `json:"org_name"`
-	Branch      string `json:"branch"`
-	Username    string `json:"username"`
-	PullRequest string `json:"pull_request"` // TODO: multiple PRs
-	Job         string `json:"job"`
-	WorkflowID  string `json:"workflow_id"`
+	Status         string `json:"status"`
+	BuildNum       string `json:"build_num"`
+	RepoName       string `json:"repo_name"`
+	Tag            string `json:"tag"`
+	Commit         string `json:"commit"`
+	BuildURL       string `json:"build_url"`
+	CompareURL     string `json:"compare_url"`
+	RepoURL        string `json:"repo_url"`
+	OrgName        string `json:"org_name"`
+	Branch         string `json:"branch"`
+	Username       string `json:"username"`
+	PullRequest    string `json:"pull_request"`
+	PipelineNumber string `json:"pipeline_number"`
+	JobName        string `json:"job_name"`
+	WorkflowID     string `json:"workflow_id"`
 }
 
 func (r *CircleCIWebhookRequest) GetSubscription() Subscription {
+	var vcs *VCS
+	// TODO: Add support for Github Enterprise
+	if strings.HasPrefix(r.RepoURL, "git@github.com") {
+		vcs = DefaultVCSList[VCSTypeGithub]
+	} else {
+		vcs = DefaultVCSList[VCSTypeBitbucket]
+	}
+
 	s := Subscription{
-		VCSType:  r.VCSType,
-		BaseURL:  r.VCSBaseURL,
+		VCSType:  vcs.Type,
+		BaseURL:  vcs.BaseURL,
 		OrgName:  r.OrgName,
 		RepoName: r.RepoName,
 	}
@@ -37,47 +46,48 @@ func (r *CircleCIWebhookRequest) GetSubscription() Subscription {
 }
 
 func (r *CircleCIWebhookRequest) getSlackAttachmentFields() []*model.SlackAttachmentField {
+	workflowText := r.PipelineNumber
+	if strings.TrimSpace(workflowText) == "" {
+		workflowText = "Visit Workflow"
+	}
+
 	slackAttachmentFields := []*model.SlackAttachmentField{
 		{
-			Title: "Tag",
-			Value: r.Tag,
-			Short: true,
+			Title: "Project",
+			Value: r.OrgName + "/" + r.RepoName,
+			Short: false,
 		},
 		{
-			Title: "Branch",
-			Value: r.Branch,
+			Title: "Job Number",
+			Value: fmt.Sprintf("[%s](%s)", r.BuildNum, r.BuildURL),
 			Short: true,
 		},
 		{
 			Title: "Triggered By",
-			Value: r.Username,
+			Value: "@" + r.Username,
 			Short: true,
 		},
 		{
-			Title: "Commit",
-			Value: r.Commit,
+			Title: "Workflow",
+			Value: fmt.Sprintf("[%s](%s)", workflowText, "https://circleci.com/workflow-run/"+r.WorkflowID),
 			Short: true,
 		},
-		{
-			Title: "Owner",
-			Value: r.OrgName,
+	}
+
+	if r.Branch != "" {
+		slackAttachmentFields = append(slackAttachmentFields, &model.SlackAttachmentField{
+			Title: "Branch",
+			Value: r.Branch,
 			Short: true,
-		},
-		{
-			Title: "Repo",
-			Value: r.RepoName,
+		})
+	}
+
+	if r.Tag != "" {
+		slackAttachmentFields = append(slackAttachmentFields, &model.SlackAttachmentField{
+			Title: "Tag",
+			Value: r.Tag,
 			Short: true,
-		},
-		{
-			Title: "Job",
-			Value: r.Job,
-			Short: true,
-		},
-		{
-			Title: "Workflow ID",
-			Value: r.WorkflowID,
-			Short: true,
-		},
+		})
 	}
 
 	return slackAttachmentFields
@@ -90,9 +100,9 @@ func (r *CircleCIWebhookRequest) GenerateFailurePost() *model.Post {
 
 	attachment := &model.SlackAttachment{
 		Color:    "#d10c20",
-		Title:    fmt.Sprintf("Oops. Build [%s](%s) failed.", r.BuildNum, r.BuildURL),
+		Title:    fmt.Sprintf(":red_circle: A **%s** job has failed!", r.JobName),
 		Fields:   r.getSlackAttachmentFields(),
-		ThumbURL: config.WorkflowFailedIconURL,
+		ThumbURL: config.BotIconURLFailed,
 	}
 
 	post := &model.Post{
@@ -111,9 +121,9 @@ func (r *CircleCIWebhookRequest) GenerateSuccessPost() *model.Post {
 
 	attachment := &model.SlackAttachment{
 		Color:    "#41aa58",
-		Title:    fmt.Sprintf("Build [%s](%s) passed.", r.BuildNum, r.BuildURL),
+		Title:    fmt.Sprintf(":tada: A **%s** job has succeeded!", r.JobName),
 		Fields:   r.getSlackAttachmentFields(),
-		ThumbURL: config.WorkflowSuccessIconURL,
+		ThumbURL: config.BotIconURLSuccess,
 	}
 
 	post := &model.Post{

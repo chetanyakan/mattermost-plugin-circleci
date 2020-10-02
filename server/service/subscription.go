@@ -1,8 +1,7 @@
 package service
 
 import (
-	"github.com/jinzhu/copier"
-	"github.com/pkg/errors"
+	"encoding/json"
 
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/config"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/serializer"
@@ -10,64 +9,61 @@ import (
 )
 
 func AddSubscription(newSubscription serializer.Subscription) error {
-	for i := 0; i < config.KVCompareAndSetMaxRetries; i++ {
-		subscriptionsList, getSubscriptionsErr := store.GetSubscriptions()
-		if getSubscriptionsErr != nil {
-			// Get subscriptions failed. Try to create the first subscription
-			subscriptionsList = nil
-		}
-
-		newSubscriptionsList := serializer.NewSubscriptions()
-		if err := copier.Copy(&newSubscriptionsList, &subscriptionsList); err != nil {
-			config.Mattermost.LogError("Failed to copy subscriptions list", "Error", err.Error())
-			return err
-		}
-
-		newSubscriptionsList.Add(newSubscription)
-
-		success, err := store.SaveSubscriptions(subscriptionsList, newSubscriptionsList)
+	err := store.AtomicModify(store.SubscriptionsKey, func(initialBytes []byte) ([]byte, error) {
+		subscriptions, err := serializer.SubscriptionsFromJSON(initialBytes)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		if success {
-			return nil
+
+		subscriptions.Add(newSubscription)
+		modifiedBytes, marshalErr := json.Marshal(subscriptions)
+		if marshalErr != nil {
+			return nil, marshalErr
 		}
+		return modifiedBytes, nil
+	})
+
+	if err != nil {
+		config.Mattermost.LogError("Failed to Add subscription.", "Error", err.Error())
+		return err
 	}
 
-	return errors.New("failed to add a subscription: max retry limit reached")
+	return nil
 }
 
 func RemoveSubscription(subscription serializer.Subscription) error {
-	for i := 0; i < config.KVCompareAndSetMaxRetries; i++ {
-		subscriptionsList, getSubscriptionsErr := store.GetSubscriptions()
-		if getSubscriptionsErr != nil {
-			// Cannot remove subscription if it does not already exist
-			return getSubscriptionsErr
-		}
-
-		newSubscriptionsList := serializer.NewSubscriptions()
-		if err := copier.Copy(&newSubscriptionsList, &subscriptionsList); err != nil {
-			config.Mattermost.LogError("Failed to copy subscriptions list", "Error", err.Error())
-			return err
-		}
-
-		newSubscriptionsList.Remove(subscription)
-
-		success, err := store.SaveSubscriptions(subscriptionsList, newSubscriptionsList)
+	err := store.AtomicModify(store.SubscriptionsKey, func(initialBytes []byte) ([]byte, error) {
+		subscriptions, err := serializer.SubscriptionsFromJSON(initialBytes)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		if success {
-			return nil
+
+		subscriptions.Remove(subscription)
+		modifiedBytes, marshalErr := json.Marshal(subscriptions)
+		if marshalErr != nil {
+			return nil, marshalErr
 		}
+		return modifiedBytes, nil
+	})
+
+	if err != nil {
+		config.Mattermost.LogError("Failed to Remove subscription.", "Error", err.Error())
+		return err
 	}
 
-	return errors.New("failed to add a subscription: max retry limit reached")
+	return nil
 }
 
 func ListSubscriptions(channelID string) ([]serializer.Subscription, error) {
-	subscriptions, err := store.GetSubscriptions()
+	b, err := config.Mattermost.KVGet(store.SubscriptionsKey)
 	if err != nil {
+		config.Mattermost.LogError("failed to get the list of subscriptions", "Error", err.Error())
+		return nil, err
+	}
+
+	subscriptions, appErr := serializer.SubscriptionsFromJSON(b)
+	if appErr != nil {
+		config.Mattermost.LogError("failed to deserialize the list of subscriptions", "Error", appErr.Error())
 		return nil, err
 	}
 
