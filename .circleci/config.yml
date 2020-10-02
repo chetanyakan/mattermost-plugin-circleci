@@ -100,3 +100,4 @@ workflows:
       - plugin-ci/test
       - plugin-ci/build
       - mattermost/test-success
+      - mattermost/test-failure
