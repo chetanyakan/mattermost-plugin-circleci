@@ -154,7 +154,7 @@ var commandUnsubscribe = &command{
 var commandListSubscriptions = &command{
 	Execute: executeListSubscriptions,
 	AutocompleteData: &model.AutocompleteData{
-		Trigger:     "list subscriptions",
+		Trigger:     "list-subscriptions",
 		HelpText:    "Get list of CircleCI notifications subscribed in the current channel",
 		Arguments:   nil,
 		SubCommands: nil,
@@ -582,9 +582,9 @@ var CircleCICommandHandler = Handler{
 		"disconnect":         commandDisconnect.Execute,
 		"subscribe":          commandSubscribe.Execute,
 		"unsubscribe":        commandUnsubscribe.Execute,
-		"list/subscriptions": commandListSubscriptions.Execute,
+		"list-subscriptions": commandListSubscriptions.Execute,
 		"build":              commandBuild.Execute,
-		"recent/builds":      commandRecentBuilds.Execute,
+		"recent-builds":      commandRecentBuilds.Execute,
 		// These can be used later when adding Github and Bitbucket on-premise support
 		//"add/vcs":            commandAddVCS.Execute,
 		//"delete/vcs":         commandDeleteVCS.Execute,
@@ -941,7 +941,7 @@ func executeBuild(ctx *model.CommandArgs, args ...string) (*model.CommandRespons
 		attachmentFields,
 		&model.SlackAttachmentField{
 			Title: "Build Number",
-			Value: build.Number,
+			Value: fmt.Sprintf("%d", build.Number),
 			Short: true,
 		},
 		&model.SlackAttachmentField{
@@ -961,12 +961,22 @@ func executeBuild(ctx *model.CommandArgs, args ...string) (*model.CommandRespons
 	attachment.Text = fmt.Sprintf("CircleCI build %d initiated successfully.", build.Number)
 	attachment.Fields = attachmentFields
 
-	return &model.CommandResponse{
-		Username:    config.BotDisplayName,
-		IconURL:     config.BotIconURL,
-		Type:        model.COMMAND_RESPONSE_TYPE_IN_CHANNEL,
-		Attachments: []*model.SlackAttachment{attachment},
-	}, nil
+	post := &model.Post{
+		UserId:    config.BotUserID,
+		ChannelId: ctx.ChannelId,
+	}
+
+	model.ParseSlackAttachment(post, []*model.SlackAttachment{attachment})
+
+	if _, err := config.Mattermost.CreatePost(post); err != nil {
+		config.Mattermost.LogError(fmt.Sprintf(
+			"Failed to create post for triggered build. Projet: %s, err: %s",
+			vcs.Type+"/"+org+"/"+repo,
+			err.Error()),
+		)
+	}
+
+	return &model.CommandResponse{}, nil
 }
 
 // func executeAddVCS(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
