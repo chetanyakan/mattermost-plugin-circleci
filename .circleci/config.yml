@@ -47,6 +47,7 @@ orbs:
           - run:
               name: Mattermost Notification
               shell: /bin/bash
+              when: always
               command: |
                 # Provide error if no webhook is set and error. Otherwise continue
                 if [ -z "<< parameters.webhook >>" ]; then
