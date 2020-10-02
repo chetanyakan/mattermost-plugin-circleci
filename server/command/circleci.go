@@ -287,62 +287,62 @@ var commandRecentBuilds = &command{
 	},
 }
 
-// var commandAddVCS = &command{
-// 	Execute: executeAddVCS,
-// 	AutocompleteData: &model.AutocompleteData{
-// 		Trigger:  "add vcs",
-// 		HelpText: "Add new VCS alias",
-// 		Arguments: []*model.AutocompleteArg{
-// 			{
-// 				HelpText: "Name to be used as VCS alias.",
-// 				Type:     model.AutocompleteArgTypeText,
-// 				Required: true,
-// 				Data: &model.AutocompleteTextArg{
-// 					Hint:    "VCS Alias",
-// 					Pattern: ".+",
-// 				},
-// 			},
-// 			{
-// 				HelpText: "Base URL of the VCS. This is the URL you see in CircleCI when viewing a build. For example - `github` is the base URL in `https://app.circleci.com/pipelines/github/foobar`",
-// 				Type:     model.AutocompleteArgTypeText,
-// 				Required: true,
-// 				Data: &model.AutocompleteTextArg{
-// 					Hint:    "VCS base URL",
-// 					Pattern: "._+",
-// 				},
-// 			},
-// 		},
-// 		SubCommands: nil,
-// 	},
-// }
-//
-// var commandDeleteVCS = &command{
-// 	Execute: executeDeleteVCS,
-// 	AutocompleteData: &model.AutocompleteData{
-// 		Trigger:  "delete vcs",
-// 		HelpText: "Delete an existing VCS alias",
-// 		Arguments: []*model.AutocompleteArg{
-// 			{
-// 				HelpText: "Name to be used as VCS alias",
-// 				Type:     model.AutocompleteArgTypeText,
-// 				Required: true,
-// 				Data: &model.AutocompleteTextArg{
-// 					Hint:    "VCS Alias",
-// 					Pattern: ".+",
-// 				},
-// 			},
-// 		},
-// 		SubCommands: nil,
-// 	},
-// }
-//
-// var commandListVCS = &command{
-// 	Execute: executeListVCS,
-// 	AutocompleteData: &model.AutocompleteData{
-// 		Trigger:  "list vcs",
-// 		HelpText: "List all available VCS.",
-// 	},
-// }
+var commandAddVCS = &command{
+	Execute: executeAddVCS,
+	AutocompleteData: &model.AutocompleteData{
+		Trigger:  "add vcs",
+		HelpText: "Add new VCS alias",
+		Arguments: []*model.AutocompleteArg{
+			{
+				HelpText: "Name to be used as VCS alias.",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "VCS Alias",
+					Pattern: ".+",
+				},
+			},
+			{
+				HelpText: "Base URL of the VCS. This is the URL you see in CircleCI when viewing a build. For example - `github` is the base URL in `https://app.circleci.com/pipelines/github/foobar`",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "VCS base URL",
+					Pattern: "._+",
+				},
+			},
+		},
+		SubCommands: nil,
+	},
+}
+
+var commandDeleteVCS = &command{
+	Execute: executeDeleteVCS,
+	AutocompleteData: &model.AutocompleteData{
+		Trigger:  "delete vcs",
+		HelpText: "Delete an existing VCS alias",
+		Arguments: []*model.AutocompleteArg{
+			{
+				HelpText: "Name to be used as VCS alias",
+				Type:     model.AutocompleteArgTypeText,
+				Required: true,
+				Data: &model.AutocompleteTextArg{
+					Hint:    "VCS Alias",
+					Pattern: ".+",
+				},
+			},
+		},
+		SubCommands: nil,
+	},
+}
+
+var commandListVCS = &command{
+	Execute: executeListVCS,
+	AutocompleteData: &model.AutocompleteData{
+		Trigger:  "list vcs",
+		HelpText: "List all available VCS.",
+	},
+}
 
 var commandProjectSummary = &command{
 	Execute: executeProjectSummary,
@@ -972,96 +972,96 @@ func executeBuild(ctx *model.CommandArgs, args ...string) (*model.CommandRespons
 	}, nil
 }
 
-// func executeAddVCS(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
-// 	config.Mattermost.LogInfo(fmt.Sprintf("%v", args))
-// 	if len(args) < 3 {
-// 		return util.SendEphemeralCommandResponse("Invalid number of arguments. Use this command as `/cirecleci add vcs [github | bitbucket] [alias] [base URL]`")
-// 	}
-//
-// 	vcsType, alias, baseURL := args[0], args[1], args[2]
-//
-// 	existingVCS, err := service.GetVCS(alias)
-// 	if err != nil {
-// 		return util.SendEphemeralCommandResponse(
-// 			"Failed to check for existing VCS with same alias. Please try again later. If the problem persists, contact your system administrator.",
-// 		)
-// 	}
-//
-// 	if existingVCS != nil {
-// 		return util.SendEphemeralCommandResponse(fmt.Sprintf("Another VCS existis with the same alias. Please delete existing VCS first if you want to update it. Alias: `%s`, base URL: `%s`", existingVCS.Alias, existingVCS.BaseURL))
-// 	}
-//
-// 	vcs := &serializer.VCS{
-// 		Alias:   alias,
-// 		BaseURL: baseURL,
-// 		Type:    vcsType,
-// 	}
-//
-// 	if err := service.AddVCS(vcs); err != nil {
-// 		return util.SendEphemeralCommandResponse("Failed to save VCS. Please try again later. If the problem persists, contact your system administrator.")
-// 	}
-//
-// 	message := fmt.Sprintf("Successfully added VCS with alias `%s` and base URL `%s`", vcs.Alias, vcs.BaseURL)
-//
-// 	_, _ = config.Mattermost.CreatePost(&model.Post{
-// 		UserId:    config.BotUserID,
-// 		ChannelId: context.ChannelId,
-// 		Message:   message,
-// 	})
-//
-// 	return &model.CommandResponse{}, nil
-// }
-//
-// func executeDeleteVCS(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
-// 	if len(args) < 1 {
-// 		return util.SendEphemeralCommandResponse("Invalid number of arguments. Use this command as `/cirecleci delete vcs [alias]`")
-// 	}
-//
-// 	alias := args[0]
-//
-// 	existingVCS, err := service.GetVCS(alias)
-// 	if err != nil {
-// 		return util.SendEphemeralCommandResponse("Failed to check VCS. Please try again later. If the problem persists, contact your system administrator.")
-// 	}
-//
-// 	if existingVCS == nil {
-// 		return util.SendEphemeralCommandResponse("No VCS exists with provided alias.")
-// 	}
-//
-// 	if err := service.DeleteVCS(alias); err != nil {
-// 		return util.SendEphemeralCommandResponse("Failed to delete VCS. Please try again later. If the problem persists, contact your system administrator.")
-// 	}
-//
-// 	message := fmt.Sprintf("Successfully deleted VCS with alias `%s`", alias)
-//
-// 	_, _ = config.Mattermost.CreatePost(&model.Post{
-// 		UserId:    config.BotUserID,
-// 		ChannelId: context.ChannelId,
-// 		Message:   message,
-// 	})
-//
-// 	return &model.CommandResponse{}, nil
-// }
-//
-// func executeListVCS(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
-// 	vcsList, err := service.GetVCSList()
-// 	if err != nil {
-// 		return util.SendEphemeralCommandResponse("Failed to fetch list of VCS. Please try again later. If the problem persists, contact your system administrator.")
-// 	}
-//
-// 	message := "Available VCS -\n\n| No.  | Type | Alias | Base URL |\n|:------------|:------------|:------------|:------------|\n"
-// 	for i, vcs := range vcsList {
-// 		message += fmt.Sprintf("|%d|%s|%s|%s|\n", i+1, vcs.Type, vcs.Alias, vcs.BaseURL)
-// 	}
-//
-// 	_, _ = config.Mattermost.CreatePost(&model.Post{
-// 		UserId:    config.BotUserID,
-// 		ChannelId: context.ChannelId,
-// 		Message:   message,
-// 	})
-//
-// 	return &model.CommandResponse{}, nil
-// }
+func executeAddVCS(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+	config.Mattermost.LogInfo(fmt.Sprintf("%v", args))
+	if len(args) < 3 {
+		return util.SendEphemeralCommandResponse("Invalid number of arguments. Use this command as `/cirecleci add vcs [github | bitbucket] [alias] [base URL]`")
+	}
+
+	vcsType, alias, baseURL := args[0], args[1], args[2]
+
+	existingVCS, err := service.GetVCS(alias)
+	if err != nil {
+		return util.SendEphemeralCommandResponse(
+			"Failed to check for existing VCS with same alias. Please try again later. If the problem persists, contact your system administrator.",
+		)
+	}
+
+	if existingVCS != nil {
+		return util.SendEphemeralCommandResponse(fmt.Sprintf("Another VCS existis with the same alias. Please delete existing VCS first if you want to update it. Alias: `%s`, base URL: `%s`", existingVCS.Alias, existingVCS.BaseURL))
+	}
+
+	vcs := &serializer.VCS{
+		Alias:   alias,
+		BaseURL: baseURL,
+		Type:    vcsType,
+	}
+
+	if err := service.AddVCS(vcs); err != nil {
+		return util.SendEphemeralCommandResponse("Failed to save VCS. Please try again later. If the problem persists, contact your system administrator.")
+	}
+
+	message := fmt.Sprintf("Successfully added VCS with alias `%s` and base URL `%s`", vcs.Alias, vcs.BaseURL)
+
+	_, _ = config.Mattermost.CreatePost(&model.Post{
+		UserId:    config.BotUserID,
+		ChannelId: context.ChannelId,
+		Message:   message,
+	})
+
+	return &model.CommandResponse{}, nil
+}
+
+func executeDeleteVCS(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+	if len(args) < 1 {
+		return util.SendEphemeralCommandResponse("Invalid number of arguments. Use this command as `/cirecleci delete vcs [alias]`")
+	}
+
+	alias := args[0]
+
+	existingVCS, err := service.GetVCS(alias)
+	if err != nil {
+		return util.SendEphemeralCommandResponse("Failed to check VCS. Please try again later. If the problem persists, contact your system administrator.")
+	}
+
+	if existingVCS == nil {
+		return util.SendEphemeralCommandResponse("No VCS exists with provided alias.")
+	}
+
+	if err := service.DeleteVCS(alias); err != nil {
+		return util.SendEphemeralCommandResponse("Failed to delete VCS. Please try again later. If the problem persists, contact your system administrator.")
+	}
+
+	message := fmt.Sprintf("Successfully deleted VCS with alias `%s`", alias)
+
+	_, _ = config.Mattermost.CreatePost(&model.Post{
+		UserId:    config.BotUserID,
+		ChannelId: context.ChannelId,
+		Message:   message,
+	})
+
+	return &model.CommandResponse{}, nil
+}
+
+func executeListVCS(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
+	vcsList, err := service.GetVCSList()
+	if err != nil {
+		return util.SendEphemeralCommandResponse("Failed to fetch list of VCS. Please try again later. If the problem persists, contact your system administrator.")
+	}
+
+	message := "Available VCS -\n\n| No.  | Type | Alias | Base URL |\n|:------------|:------------|:------------|:------------|\n"
+	for i, vcs := range vcsList {
+		message += fmt.Sprintf("|%d|%s|%s|%s|\n", i+1, vcs.Type, vcs.Alias, vcs.BaseURL)
+	}
+
+	_, _ = config.Mattermost.CreatePost(&model.Post{
+		UserId:    config.BotUserID,
+		ChannelId: context.ChannelId,
+		Message:   message,
+	})
+
+	return &model.CommandResponse{}, nil
+}
 
 // executeProjectSummary - uses insight API
 func executeProjectSummary(ctx *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
