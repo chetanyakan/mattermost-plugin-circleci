@@ -52,6 +52,7 @@ func SaveAuthToken(userID, authToken string) error {
 	return nil
 }
 
+// These function would be useful in future when implementing on-premise VCS support.
 //func GetVCS(alias string) (*serializer.VCS, error) {
 //	key := vcsKeyPrefix + alias
 //	data, err := config.Mattermost.KVGet(key)

@@ -288,6 +288,7 @@ var commandRecentBuilds = &command{
 	},
 }
 
+// These function would be useful in future when implementing on-premise VCS support.
 // var commandAddVCS = &command{
 // 	Execute: executeAddVCS,
 // 	AutocompleteData: &model.AutocompleteData{
@@ -978,6 +979,7 @@ func executeBuild(ctx *model.CommandArgs, args ...string) (*model.CommandRespons
 	return &model.CommandResponse{}, nil
 }
 
+// These function would be useful in future when implementing on-premise VCS support.
 // func executeAddVCS(context *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
 // 	config.Mattermost.LogInfo(fmt.Sprintf("%v", args))
 // 	if len(args) < 3 {
