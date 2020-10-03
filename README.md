@@ -1,4 +1,4 @@
-# Mattermost CircleCI Plugin
+![asdasd](assets/logo.svg) <h1>Mattermost CircleCI Plugin</h1>
 
 A CircleCI plugin for Mattermost. Supports CircleCI SaaS.
 
