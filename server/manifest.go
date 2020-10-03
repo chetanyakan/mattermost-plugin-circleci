@@ -17,9 +17,9 @@ const manifestStr = `
   "description": "CircleCI Plugin for Mattermost.",
   "homepage_url": "https://github.com/chetanyakan/mattermost-plugin-circleci",
   "support_url": "https://github.com/chetanyakan/mattermost-plugin-circleci/issues",
-  "release_notes_url": "https://github.com/chetanyakan/mattermost-plugin-circleci/releases/tag/v0.1.0",
+  "release_notes_url": "https://github.com/chetanyakan/mattermost-plugin-circleci/releases/tag/v1.0.0",
   "icon_path": "assets/icon.svg",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "min_server_version": "5.20.0",
   "server": {
     "executables": {
@@ -39,6 +39,14 @@ const manifestStr = `
         "type": "generated",
         "help_text": "The Webhook Secret used to authenticate CircleCI notifications.",
         "regenerate_help_text": "Regenerates the webhook secret. Regenerating the secret invalidates your existing integrations.",
+        "placeholder": "",
+        "default": null
+      },
+      {
+        "key": "EncryptionKey",
+        "display_name": "At Rest Encryption Key",
+        "type": "generated",
+        "help_text": "The AES encryption key used to encrypt stored access tokens.",
         "placeholder": "",
         "default": null
       }

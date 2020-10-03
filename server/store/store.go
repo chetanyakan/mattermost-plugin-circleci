@@ -29,6 +29,10 @@ func GetCircleCIToken(userID string) (string, error) {
 		return "", appErr
 	}
 
+	if authToken == nil || len(authToken) == 0 {
+		return "", nil
+	}
+
 	unencryptedToken, err := util.Decrypt([]byte(config.GetConfig().EncryptionKey), string(authToken))
 	if err != nil {
 		return "", err
