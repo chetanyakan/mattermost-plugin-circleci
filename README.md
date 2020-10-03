@@ -86,3 +86,7 @@ When you’ve tested the plugin and confirmed it’s working, notify your team s
 ## Development
 
 This plugin contains a server portion. Read our documentation about the [Developer Workflow](https://developers.mattermost.com/extend/plugins/developer-workflow/) and [Developer Setup](https://developers.mattermost.com/extend/plugins/developer-setup/) for more information about developing and extending plugins.
+
+## Security Vulnerability Disclosure
+
+Do not post a GitHub ticket for security vulnerability. Please report any security vulnerability to `@harshilsharma63` or `@chetanyakan` on https://community.mattermost.com. 

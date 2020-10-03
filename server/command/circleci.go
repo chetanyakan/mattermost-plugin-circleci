@@ -870,7 +870,6 @@ func executeBuild(ctx *model.CommandArgs, args ...string) (*model.CommandRespons
 
 	client := util.GetCircleciClient(string(authToken))
 
-	// TODO need to add support for tag here
 	body := map[string]string{}
 
 	switch headType {
@@ -900,7 +899,7 @@ func executeBuild(ctx *model.CommandArgs, args ...string) (*model.CommandRespons
 		var message string
 
 		if response != nil && response.StatusCode == http.StatusNotFound {
-			message = "Unable to trigger build. Either the specified workflow doesn't exist or the  auth token is not valid."
+			message = "Unable to trigger build. Either the specified workflow doesn't exist or the auth token is not valid."
 		} else {
 			message = "Unable to trigger build."
 		}
