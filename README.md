@@ -25,9 +25,9 @@ A CircleCI plugin for Mattermost. Supports CircleCI SaaS.
 
 This guide is intended for Mattermost System Admins setting up the CircleCI plugin and Mattermost users who want information about the plugin functionality. For more information about contributing to this plugin, visit the [Development section](#development).
 
-## Licensed
+## License
 
-This repository is licensed under the [MIT License](https://github.com/chetanyakan/mattermost-plugin-circleci/blob/master/LICENSE).
+This repository is under the [MIT License](https://github.com/chetanyakan/mattermost-plugin-circleci/blob/master/LICENSE).
 
 ## About the CircleCI Plugin
 
