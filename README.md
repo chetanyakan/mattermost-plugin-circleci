@@ -83,7 +83,7 @@ This guide assumes:
 
 ## Using the Plugin
 
-Once you've generated the personal access token, run the `/circlec connect <your auth token` slash command from any channel within Mattermost to connect your Mattermost account with CircleCI.
+Once you've generated the personal access token, run the `/circlec connect <your auth token>` slash command from any channel within Mattermost to connect your Mattermost account with CircleCI.
 
 ## Onboarding Your Users
 
@@ -99,4 +99,4 @@ This plugin contains a server portion. Read our documentation about the [Develop
 
 ## Security Vulnerability Disclosure
 
-Do not post a GitHub ticket for security vulnerability. Please report any security vulnerability to `@harshilsharma63` or `@chetanyakan` on https://community.mattermost.com. 
+Do not post a GitHub ticket for security vulnerability. Please report any security vulnerability to `@harshilsharma63` or `@chetanyakan` on [Community Mattermost](https://community.mattermost.com). 
