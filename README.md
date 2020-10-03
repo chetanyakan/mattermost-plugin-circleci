@@ -33,7 +33,7 @@ This repository is under the [MIT License](https://github.com/chetanyakan/matter
 
 The Mattermost CircleCI plugin uses a webhook to connect your CircleCI account to Mattermost to listen for incoming CircleCI events. Event notifications are published in the channels where they are subscribed. 
 
-After your System Admin has [configured the CircleCI plugin](#configuration), run `/CircleCI connect` in a Mattermost channel to connect your Mattermost and CircleCI accounts.
+After your System Admin has [configured the CircleCI plugin](#configuration), run `/circleci connect` in a Mattermost channel to connect your Mattermost and CircleCI accounts.
 
 Once connected, you'll have access to the following features:
 
@@ -90,7 +90,7 @@ When you’ve tested the plugin and confirmed it’s working, notify your team s
 
 > Hi team, 
 
-> We've set up the Mattermost CircleCI plugin, so you can get notifications from CircleCI in Mattermost. To get started, run the `/circleci connect` slash command from any channel within Mattermost to connect your Mattermost account with CircleCI. Then, take a look at the [slash commands](#slash-commands) section for details about how to use the plugin.
+> We've set up the Mattermost CircleCI plugin, so you can get notifications from CircleCI in Mattermost. To get started, run the `/circleci connect` slash command from any channel within Mattermost to connect your Mattermost account with CircleCI. Then, take a look at the [about-the-circleci-plugin](#slash-commands) in the plugin for more details.
 
 ## Development
 
