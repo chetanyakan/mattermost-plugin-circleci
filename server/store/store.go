@@ -14,9 +14,43 @@ import (
 const (
 	SubscriptionsKey = "circleci_subscriptions"
 
-	vcsKeyPrefix = "vcs_"
-	listVCSKey   = "vcs_list"
+	vcsKeyPrefix        = "vcs_"
+	listVCSKey          = "vcs_list"
+	circleciTokenPrefix = "circleci_token_"
 )
+
+func CircleCIAuthTokenKey(userID string) string {
+	return circleciTokenPrefix + userID
+}
+
+func GetCircleCIToken(userID string) (string, error) {
+	authToken, appErr := config.Mattermost.KVGet(CircleCIAuthTokenKey(userID))
+	if appErr != nil {
+		return "", appErr
+	}
+
+	unencryptedToken, err := util.Decrypt([]byte(config.GetConfig().EncryptionKey), string(authToken))
+	if err != nil {
+		return "", err
+	}
+
+	return unencryptedToken, nil
+}
+
+func SaveAuthToken(userID, authToken string) error {
+	encryptedToken, err := util.Encrypt([]byte(config.GetConfig().EncryptionKey), authToken)
+	if err != nil {
+		config.Mattermost.LogError("Unable to encrypt auth token.", "Error ", err.Error())
+		return err
+	}
+
+	if appErr := config.Mattermost.KVSet(CircleCIAuthTokenKey(userID), []byte(encryptedToken)); appErr != nil {
+		config.Mattermost.LogError("Unable to save auth token to KVStore.", "Error ", appErr.Error())
+		return errors.New(appErr.Error())
+	}
+
+	return nil
+}
 
 func GetVCS(alias string) (*serializer.VCS, error) {
 	key := vcsKeyPrefix + alias

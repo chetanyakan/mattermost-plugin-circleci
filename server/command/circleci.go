@@ -16,6 +16,7 @@ import (
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/config"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/serializer"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/service"
+	"github.com/chetanyakan/mattermost-plugin-circleci/server/store"
 	"github.com/chetanyakan/mattermost-plugin-circleci/server/util"
 )
 
@@ -677,29 +678,25 @@ func executeConnect(ctx *model.CommandArgs, args ...string) (*model.CommandRespo
 	}
 
 	authToken := args[0]
-	conf := circleci2.NewConfiguration()
-	conf.AddDefaultHeader("Circle-Token", authToken)
-
-	if err := config.Mattermost.KVSet(ctx.UserId+"_auth_token", []byte(authToken)); err != nil {
-		config.Mattermost.LogError("Unable to save auth token to KVStore. Error: " + err.Error())
-		return nil, err
+	if err := store.SaveAuthToken(ctx.UserId, authToken); err != nil {
+		return util.SendEphemeralCommandResponse("Failed to save the auth token. Please try again later. If the problem persists, contact your system administrator.")
 	}
 
 	return util.SendEphemeralCommandResponse("Successfully saved auth token.")
 }
 
 func executeDisconnect(ctx *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
-	authToken, appErr := config.Mattermost.KVGet(ctx.UserId + "_auth_token")
-	if appErr != nil {
-		return nil, appErr
+	authToken, err := store.GetCircleCIToken(ctx.UserId)
+	if err != nil {
+		return util.SendEphemeralCommandResponse("Failed to get the auth token. Please try again later. If the problem persists, contact your system administrator.")
 	}
-	if string(authToken) == "" {
+	if authToken == "" {
 		return util.SendEphemeralCommandResponse("Not connected. Please connect and try again later.")
 	}
 
-	if err := config.Mattermost.KVDelete(ctx.UserId + "_auth_token"); err != nil {
-		config.Mattermost.LogError("Unable to disconnect. Error: " + err.Error())
-		return nil, err
+	if appErr := config.Mattermost.KVDelete(store.CircleCIAuthTokenKey(ctx.UserId)); appErr != nil {
+		config.Mattermost.LogError("Unable to disconnect from CircleCI.", "Error", appErr.Error())
+		return nil, appErr
 	}
 
 	return util.SendEphemeralCommandResponse("Successfully disconnected.")
@@ -710,14 +707,14 @@ func executeListRecentBuilds(ctx *model.CommandArgs, args ...string) (*model.Com
 		return util.SendEphemeralCommandResponse("Invalid  syntax. Use this command as `/circleci recent-builds <vcs alias> <org name> <repo name> <workflow name>`")
 	}
 
-	authToken, appErr := config.Mattermost.KVGet(ctx.UserId + "_auth_token")
-	if appErr != nil {
-		return nil, appErr
+	authToken, err := store.GetCircleCIToken(ctx.UserId)
+	if err != nil {
+		return util.SendEphemeralCommandResponse("Failed to get the auth token. Please try again later. If the problem persists, contact your system administrator.")
 	}
-	if string(authToken) == "" {
+	if authToken == "" {
 		return util.SendEphemeralCommandResponse("Not connected. Please connect and try again later.")
 	}
-	client := util.GetCircleciClient(string(authToken))
+	client := util.GetCircleciClient(authToken)
 
 	vcsAlias, org, repo, workflow := args[0], args[1], args[2], args[3]
 
@@ -848,11 +845,11 @@ func executeListRecentBuilds(ctx *model.CommandArgs, args ...string) (*model.Com
 }
 
 func executeBuild(ctx *model.CommandArgs, args ...string) (*model.CommandResponse, *model.AppError) {
-	authToken, appErr := config.Mattermost.KVGet(ctx.UserId + "_auth_token")
-	if appErr != nil {
-		return nil, appErr
+	authToken, err := store.GetCircleCIToken(ctx.UserId)
+	if err != nil {
+		return util.SendEphemeralCommandResponse("Failed to get the auth token. Please try again later. If the problem persists, contact your system administrator.")
 	}
-	if string(authToken) == "" {
+	if authToken == "" {
 		return util.SendEphemeralCommandResponse("Not connected. Please connect and try again later.")
 	}
 
@@ -868,7 +865,7 @@ func executeBuild(ctx *model.CommandArgs, args ...string) (*model.CommandRespons
 		return util.SendEphemeralCommandResponse("Failed to get VCS details. Please try again later. If the problem persists, contact your system administrator.")
 	}
 
-	client := util.GetCircleciClient(string(authToken))
+	client := util.GetCircleciClient(authToken)
 
 	body := map[string]string{}
 
@@ -1084,14 +1081,14 @@ func executeProjectSummary(ctx *model.CommandArgs, args ...string) (*model.Comma
 		return util.SendEphemeralCommandResponse("Failed to get VCS details. Please try again later. If the problem persists, contact your system administrator.")
 	}
 
-	authToken, appErr := config.Mattermost.KVGet(ctx.UserId + "_auth_token")
-	if appErr != nil {
-		return nil, appErr
+	authToken, err := store.GetCircleCIToken(ctx.UserId)
+	if err != nil {
+		return util.SendEphemeralCommandResponse("Failed to get the auth token. Please try again later. If the problem persists, contact your system administrator.")
 	}
-	if string(authToken) == "" {
+	if authToken == "" {
 		return util.SendEphemeralCommandResponse("Not connected. Please connect and try again later.")
 	}
-	client := util.GetCircleciClient(string(authToken))
+	client := util.GetCircleciClient(authToken)
 
 	insights, response, err := client.InsightsApi.GetProjectWorkflowMetrics(context.TODO(), fmt.Sprintf("%s/%s/%s", vcs.Type, org, repo), nil)
 	if err != nil {
@@ -1199,7 +1196,7 @@ func executeProjectSummary(ctx *model.CommandArgs, args ...string) (*model.Comma
 
 	model.ParseSlackAttachment(post, attachments)
 
-	_, appErr = config.Mattermost.CreatePost(post)
+	_, appErr := config.Mattermost.CreatePost(post)
 	if appErr != nil {
 		config.Mattermost.LogError(fmt.Sprintf("Failed to create post for project summary. Project: %s, error: %s", args[1], appErr.Error()))
 		return util.SendEphemeralCommandResponse(
@@ -1223,16 +1220,16 @@ func executeGetPipelineByNumber(ctx *model.CommandArgs, args ...string) (*model.
 		return util.SendEphemeralCommandResponse("Failed to get VCS details. Please try again later. If the problem persists, contact your system administrator.")
 	}
 
-	authToken, appErr := config.Mattermost.KVGet(ctx.UserId + "_auth_token")
-	if appErr != nil {
-		return nil, appErr
+	authToken, err := store.GetCircleCIToken(ctx.UserId)
+	if err != nil {
+		return util.SendEphemeralCommandResponse("Failed to get the auth token. Please try again later. If the problem persists, contact your system administrator.")
 	}
 
-	if string(authToken) == "" {
+	if authToken == "" {
 		return util.SendEphemeralCommandResponse("Not connected. Please connect and try again later.")
 	}
 
-	client := util.GetCircleciClient(string(authToken))
+	client := util.GetCircleciClient(authToken)
 	pipeline, pipelineResponse, err := client.PipelineApi.GetPipelineByNumber(context.TODO(), fmt.Sprintf("%s/%s/%s", vcs.Type, org, repo), pipelineNumber)
 
 	if pipelineResponse != nil {
@@ -1411,21 +1408,21 @@ func executeGetAllEnvironmentVariables(ctx *model.CommandArgs, args ...string) (
 		return util.SendEphemeralCommandResponse("Failed to get VCS details. Please try again later. If the problem persists, contact your system administrator.")
 	}
 
-	authToken, appErr := config.Mattermost.KVGet(ctx.UserId + "_auth_token")
-	if appErr != nil {
-		return nil, appErr
+	authToken, err := store.GetCircleCIToken(ctx.UserId)
+	if err != nil {
+		return util.SendEphemeralCommandResponse("Failed to get the auth token. Please try again later. If the problem persists, contact your system administrator.")
 	}
 
-	if string(authToken) == "" {
+	if authToken == "" {
 		return util.SendEphemeralCommandResponse("Not connected. Please connect and try again later.")
 	}
 
-	client := util.GetCircleciClient(string(authToken))
+	client := util.GetCircleciClient(authToken)
 	projectSlug := fmt.Sprintf("%s/%s/%s", vcs.Type, org, repo)
 
 	envVars, response, err := client.ProjectApi.ListEnvVars(context.TODO(), projectSlug)
 	if err != nil {
-		config.Mattermost.LogError(fmt.Sprintf("Could not fetch the list of Env Vars. Channel ID: %s, error: %s", ctx.ChannelId, appErr.Error()))
+		config.Mattermost.LogError(fmt.Sprintf("Could not fetch the list of Env Vars. Channel ID: %s, error: %s", ctx.ChannelId, err.Error()))
 		return util.SendEphemeralCommandResponse("Could not fetch the list of Env Vars. Please make sure your CircleCI Auth Token is still valid and try again.")
 	}
 
@@ -1470,16 +1467,16 @@ func executeRecentWorkflowRuns(ctx *model.CommandArgs, args ...string) (*model.C
 		return util.SendEphemeralCommandResponse("Failed to get VCS details. Please try again later. If the problem persists, contact your system administrator.")
 	}
 
-	authToken, appErr := config.Mattermost.KVGet(ctx.UserId + "_auth_token")
-	if appErr != nil {
-		return nil, appErr
+	authToken, err := store.GetCircleCIToken(ctx.UserId)
+	if err != nil {
+		return util.SendEphemeralCommandResponse("Failed to get the auth token. Please try again later. If the problem persists, contact your system administrator.")
 	}
 
-	if string(authToken) == "" {
+	if authToken == "" {
 		return util.SendEphemeralCommandResponse("Not connected. Please connect and try again later.")
 	}
 
-	client := util.GetCircleciClient(string(authToken))
+	client := util.GetCircleciClient(authToken)
 	projectSlug := fmt.Sprintf("%s/%s/%s", vcs.Type, org, repo)
 
 	workflowRuns, response, err := client.InsightsApi.GetProjectWorkflowRuns(
