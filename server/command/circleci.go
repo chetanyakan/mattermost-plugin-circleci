@@ -691,7 +691,7 @@ func executeDisconnect(ctx *model.CommandArgs, args ...string) (*model.CommandRe
 		return util.SendEphemeralCommandResponse("Failed to get the auth token. Please try again later. If the problem persists, contact your system administrator.")
 	}
 	if authToken == "" {
-		return util.SendEphemeralCommandResponse("Not connected. Please connect and try again later.")
+		return util.SendEphemeralCommandResponse("Your CircleCI account is not connected to Mattermost. Please use `/circleci connect` to connect your CircleCI and Mattermost accounts.")
 	}
 
 	if appErr := config.Mattermost.KVDelete(store.CircleCIAuthTokenKey(ctx.UserId)); appErr != nil {
@@ -712,7 +712,7 @@ func executeListRecentBuilds(ctx *model.CommandArgs, args ...string) (*model.Com
 		return util.SendEphemeralCommandResponse("Failed to get the auth token. Please try again later. If the problem persists, contact your system administrator.")
 	}
 	if authToken == "" {
-		return util.SendEphemeralCommandResponse("Not connected. Please connect and try again later.")
+		return util.SendEphemeralCommandResponse("Your CircleCI account is not connected to Mattermost. Please use `/circleci connect` to connect your CircleCI and Mattermost accounts.")
 	}
 	client := util.GetCircleciClient(authToken)
 
@@ -850,7 +850,7 @@ func executeBuild(ctx *model.CommandArgs, args ...string) (*model.CommandRespons
 		return util.SendEphemeralCommandResponse("Failed to get the auth token. Please try again later. If the problem persists, contact your system administrator.")
 	}
 	if authToken == "" {
-		return util.SendEphemeralCommandResponse("Not connected. Please connect and try again later.")
+		return util.SendEphemeralCommandResponse("Your CircleCI account is not connected to Mattermost. Please use `/circleci connect` to connect your CircleCI and Mattermost accounts.")
 	}
 
 	// we need the auth token
@@ -1086,7 +1086,7 @@ func executeProjectSummary(ctx *model.CommandArgs, args ...string) (*model.Comma
 		return util.SendEphemeralCommandResponse("Failed to get the auth token. Please try again later. If the problem persists, contact your system administrator.")
 	}
 	if authToken == "" {
-		return util.SendEphemeralCommandResponse("Not connected. Please connect and try again later.")
+		return util.SendEphemeralCommandResponse("Your CircleCI account is not connected to Mattermost. Please use `/circleci connect` to connect your CircleCI and Mattermost accounts.")
 	}
 	client := util.GetCircleciClient(authToken)
 
@@ -1226,7 +1226,7 @@ func executeGetPipelineByNumber(ctx *model.CommandArgs, args ...string) (*model.
 	}
 
 	if authToken == "" {
-		return util.SendEphemeralCommandResponse("Not connected. Please connect and try again later.")
+		return util.SendEphemeralCommandResponse("Your CircleCI account is not connected to Mattermost. Please use `/circleci connect` to connect your CircleCI and Mattermost accounts.")
 	}
 
 	client := util.GetCircleciClient(authToken)
@@ -1414,7 +1414,7 @@ func executeGetAllEnvironmentVariables(ctx *model.CommandArgs, args ...string) (
 	}
 
 	if authToken == "" {
-		return util.SendEphemeralCommandResponse("Not connected. Please connect and try again later.")
+		return util.SendEphemeralCommandResponse("Your CircleCI account is not connected to Mattermost. Please use `/circleci connect` to connect your CircleCI and Mattermost accounts.")
 	}
 
 	client := util.GetCircleciClient(authToken)
@@ -1473,7 +1473,7 @@ func executeRecentWorkflowRuns(ctx *model.CommandArgs, args ...string) (*model.C
 	}
 
 	if authToken == "" {
-		return util.SendEphemeralCommandResponse("Not connected. Please connect and try again later.")
+		return util.SendEphemeralCommandResponse("Your CircleCI account is not connected to Mattermost. Please use `/circleci connect` to connect your CircleCI and Mattermost accounts.")
 	}
 
 	client := util.GetCircleciClient(authToken)
