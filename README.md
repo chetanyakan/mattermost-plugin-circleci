@@ -55,7 +55,13 @@ This guide assumes:
 
 ## Configuration
 
-TODO
+1. Go to the plugin system console settings to generate the Webhook Secret and Encryption Key and enable the plugin. Note the value of the `Webhook Secret`.
+1. Make sure you are using CircleCI config version v2.1
+1. Use the `status` command from the Mattermost Orb, which is added in the `.circleci/config.yml` of this repo as the last step of any CircleCI Job you created for your workflow to enable notifications to Mattermost.
+1. Go to your project settings on CircleCI and add an Environment variable with the name `WEBHOOK_URL` with the value:
+`http://<mattermost_url>/plugins/com.mattermost.circleci/api/v1/webhook?secret=<webhook_secret>`
+    - Replace `<mattermost_url>` with your site URL, for example: `localhost:8065`
+    - Replace `<webhook_secret>` with the secret generated in the first step
 
 ### Generating Personal Access Token
 
@@ -69,7 +75,10 @@ TODO
 
 ### Subscribing to Notifications
 
-TODO
+1. Go to the channel in which you want to subscribe to notifications for your project.
+1. Use the `/circleci subscribe` command to subscribe this channel to notifications.
+1. Usage: `/circleci subscribe <VCS-Type> <Owner-Name> <Repo-Name>`
+1. Example: `/circleci subscribe github chetanyakan mattermost-plugin-circleci`
 
 ## Using the Plugin
 

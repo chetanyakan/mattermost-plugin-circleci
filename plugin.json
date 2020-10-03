@@ -28,7 +28,7 @@
             },
             {
                 "key": "EncryptionKey",
-                "display_name": "At Rest Encryption Key",
+                "display_name": "At Rest Encryption Key:",
                 "type": "generated",
                 "help_text": "The AES encryption key used to encrypt stored access tokens."
             }
