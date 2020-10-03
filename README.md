@@ -98,4 +98,4 @@ This plugin contains a server portion. Read our documentation about the [Develop
 
 ## Security Vulnerability Disclosure
 
-Do not post a GitHub ticket for security vulnerability. Please report any security vulnerability to `@harshilsharma63` or `@chetanyakan` on https://community.mattermost.com. 
+Do not post a GitHub ticket for security vulnerability. Please report any security vulnerability to `@harshilsharma63` or `@chetanyakan` on [Community Mattermost](https://community.mattermost.com). 
