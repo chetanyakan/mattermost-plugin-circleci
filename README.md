@@ -28,6 +28,7 @@ This guide is intended for Mattermost System Admins setting up the CircleCI plug
 ## License
 
 This repository is under the [MIT License](https://github.com/chetanyakan/mattermost-plugin-circleci/blob/master/LICENSE).
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fchetanyakan%2Fmattermost-plugin-circleci.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fchetanyakan%2Fmattermost-plugin-circleci?ref=badge_large)
 
 ## About the CircleCI Plugin
 
