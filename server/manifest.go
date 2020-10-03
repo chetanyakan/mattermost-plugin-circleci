@@ -18,7 +18,7 @@ const manifestStr = `
   "homepage_url": "https://github.com/chetanyakan/mattermost-plugin-circleci",
   "support_url": "https://github.com/chetanyakan/mattermost-plugin-circleci/issues",
   "release_notes_url": "https://github.com/chetanyakan/mattermost-plugin-circleci/releases/tag/v1.0.0",
-  "icon_path": "assets/icon.svg",
+  "icon_path": "assets/logo.svg",
   "version": "1.0.0",
   "min_server_version": "5.20.0",
   "server": {
@@ -44,7 +44,7 @@ const manifestStr = `
       },
       {
         "key": "EncryptionKey",
-        "display_name": "At Rest Encryption Key",
+        "display_name": "At Rest Encryption Key:",
         "type": "generated",
         "help_text": "The AES encryption key used to encrypt stored access tokens.",
         "placeholder": "",

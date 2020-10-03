@@ -84,15 +84,6 @@ orbs:
         executor: mattermostexecutor
         steps:
           - status
-      test-failure:
-        executor: mattermostexecutor
-        steps:
-          - run:
-              name: failed command
-              shell: /bin/bash
-              command: |
-                false
-          - status
 
 workflows:
   main:
@@ -101,4 +92,3 @@ workflows:
       - plugin-ci/test
       - plugin-ci/build
       - mattermost/test-success
-      - mattermost/test-failure
