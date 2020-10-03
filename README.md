@@ -90,7 +90,7 @@ When you’ve tested the plugin and confirmed it’s working, notify your team s
 
 > Hi team, 
 
-> We've set up the Mattermost CircleCI plugin, so you can get notifications from CircleCI in Mattermost. To get started, run the `/circleci connect` slash command from any channel within Mattermost to connect your Mattermost account with CircleCI. Then, take a look at the [about-the-circleci-plugin](#slash-commands) in the plugin for more details.
+> We've set up the Mattermost CircleCI plugin, so you can get notifications from CircleCI in Mattermost. To get started, run the `/circleci connect` slash command from any channel within Mattermost to connect your Mattermost account with CircleCI. Then, take a look at the [available features](#about-the-circleci-plugin) in the plugin for more details.
 
 ## Development
 
