@@ -41,7 +41,7 @@ Once connected, you'll have access to the following features:
 
 * __Event Subscriptions__ - Ability to subscribe to build notifications for specified repositories.
 * __Build__ - Ability to trigger build in CircleCI for a project. The build can be triggered for either a branch or a tag.
-* __Recent Builds__ - View recent builds for a repository's workflow. For example, view recentr builds for `release` workflow.
+* __Recent Builds__ - View recent builds for a repository's workflow. For example, view recent builds for `release` workflow.
 * __Pipeline by Number__ - Get details of a pipeline by it's number. Each pipeline execution in CircleCI has a user-readable number which can be used for identifying a pipeline execution.  
 * __Environment__ - Get a list of *masked* context variables available to in pipeline.
 * __Project Insights__ - Get project insights on demand such as success rate, throughput, mean duration etc.
