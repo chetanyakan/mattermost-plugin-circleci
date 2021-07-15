@@ -10,7 +10,7 @@ require (
 	github.com/mattermost/mattermost-server/v5 v5.26.2
 	github.com/pkg/errors v0.9.1
 	github.com/thoas/go-funk v0.7.0
-	go.uber.org/atomic v1.6.0
+	go.uber.org/atomic v1.9.0
 )
 
 // To access the TomTucka/go-circleci v2 repo fork
